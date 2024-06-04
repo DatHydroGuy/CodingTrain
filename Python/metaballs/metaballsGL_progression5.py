@@ -10,8 +10,9 @@ from blob import Blob
 
 # taken from https://jamie-wong.com/2016/07/06/metaballs-and-webgl/
 
-SCREEN_WIDTH = 1500
-SCREEN_HEIGHT = 1000
+user32 = ctypes.windll.user32
+SCREEN_WIDTH = user32.GetSystemMetrics(0)
+SCREEN_HEIGHT = user32.GetSystemMetrics(1)
 NUM_METABALLS = 15
 
 vertex_shader = """
@@ -168,7 +169,7 @@ def main():
         metaballs = numpy.array(metaballs, dtype=numpy.float32)
 
         display(shader, vertex_array_object, metaballs)
-        pygame.display.set_caption("FPS: %.2f" % clock.get_fps())
+        # pygame.display.set_caption("FPS: %.2f" % clock.get_fps())
         pygame.display.flip()
 
 
