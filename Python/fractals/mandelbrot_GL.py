@@ -55,7 +55,7 @@ def create_object(shader):
     return vertex_array_object
 
 
-def display(shader, vertex_array_object, data_for_gpu):
+def display(shader, vertex_array_object, data_for_gpu, real_min, real_max, imag_min, imag_max):
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
     glUseProgram(shader)
 
@@ -63,6 +63,17 @@ def display(shader, vertex_array_object, data_for_gpu):
     glUniform1f(screen_width_loc, SCREEN_WIDTH)
     screen_height_loc = glGetUniformLocation(shader, "screen_height")
     glUniform1f(screen_height_loc, SCREEN_HEIGHT)
+
+    real_min_loc = glGetUniformLocation(shader, "real_min")
+    glUniform1f(real_min_loc, real_min)
+    real_max_loc = glGetUniformLocation(shader, "real_max")
+    glUniform1f(real_max_loc, real_max)
+
+    imag_min_loc = glGetUniformLocation(shader, "imag_min")
+    glUniform1f(imag_min_loc, imag_min)
+    imag_max_loc = glGetUniformLocation(shader, "imag_max")
+    glUniform1f(imag_max_loc, imag_max)
+
     colour_map_loc = glGetUniformLocation(shader, "colour_map")
     glUniform3fv(colour_map_loc, int(len(data_for_gpu) / 3), data_for_gpu)
 
@@ -96,6 +107,13 @@ def main():
     col_map = reds + yellows + whites
     colour_map = numpy.array(col_map, dtype=numpy.float32)
 
+    x_min = -2.5
+    x_max = 1.5
+    y_min = -1.5
+    y_max = 1.5
+    x_zoom = (x_max - x_min) * 0.1
+    y_zoom = (y_max - y_min) * 0.1
+
     clock = pygame.time.Clock()
 
     while True:
@@ -103,10 +121,29 @@ def main():
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 return
-            if event.type == pygame.KEYUP and event.key == pygame.K_ESCAPE:
-                return
+            if event.type == pygame.KEYUP:
+                if event.key == pygame.K_ESCAPE:
+                    return
+                elif event.key == pygame.K_LEFT:
+                    x_min -= x_zoom
+                elif event.key == pygame.K_RIGHT:
+                    x_min += x_zoom
+                elif event.key == pygame.K_UP:
+                    y_min += y_zoom
+                elif event.key == pygame.K_DOWN:
+                    y_min -= y_zoom
+                elif event.key == pygame.K_KP1:
+                    x_max -= x_zoom
+                elif event.key == pygame.K_KP3:
+                    x_max += x_zoom
+                elif event.key == pygame.K_KP5:
+                    y_max += y_zoom
+                elif event.key == pygame.K_KP2:
+                    y_max -= y_zoom
+            x_zoom = (x_max - x_min) * 0.1
+            y_zoom = (y_max - y_min) * 0.1
 
-        display(shader, vertex_array_object, colour_map)
+        display(shader, vertex_array_object, colour_map, x_min, x_max, y_min, y_max)
         pygame.display.set_caption("FPS: %.2f" % clock.get_fps())
         pygame.display.flip()
 

@@ -2,6 +2,10 @@
 precision highp float;
 uniform float screen_width;
 uniform float screen_height;
+uniform float real_min;
+uniform float real_max;
+uniform float imag_min;
+uniform float imag_max;
 uniform vec3 colour_map[193];
 
 float my_abs(float x) {
@@ -19,8 +23,8 @@ void main()
     int num_iterations = 0;
     float col = 0.0;
 
-    float z_real = map(gl_FragCoord.x, 0, screen_width, -2.5, 1.5);
-    float z_imag = map(gl_FragCoord.y, 0, screen_height, -1.5, 1.5);
+    float z_real = map(gl_FragCoord.x, 0, screen_width, real_min, real_max);
+    float z_imag = map(gl_FragCoord.y, 0, screen_height, imag_min, imag_max);
 
 
     float c_real = z_real;
