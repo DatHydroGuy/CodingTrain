@@ -19,8 +19,9 @@ void main()
     int num_iterations = 0;
     float col = 0.0;
 
-    float z_real = 2.0 * (gl_FragCoord.x / screen_width * 2 - 1) - 0.5;
-    float z_imag = 1.5 * (gl_FragCoord.y / screen_height * 2 - 1);
+    float z_real = map(gl_FragCoord.x, 0, screen_width, -2.5, 1.5);
+    float z_imag = map(gl_FragCoord.y, 0, screen_height, -1.5, 1.5);
+
 
     float c_real = z_real;
     float c_imag = z_imag;

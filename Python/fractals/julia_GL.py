@@ -60,14 +60,14 @@ def display(shader, vertex_array_object, data_for_gpu, mouse_x, mouse_y):
     glUseProgram(shader)
 
     if mouse_x is not None:
-        mouse_x = numpy.interp(mouse_x, [0, SCREEN_WIDTH], [-2.0, 2.0])
+        mouse_x = numpy.interp(mouse_x, [0, SCREEN_WIDTH], [-0.8, 0.8])
     else:
         mouse_x = -0.70176
     c_real_loc = glGetUniformLocation(shader, "c_real")
     glUniform1f(c_real_loc, mouse_x)
 
     if mouse_y is not None:
-        mouse_y = numpy.interp(mouse_y, [0, SCREEN_HEIGHT], [-1.5, 1.5])
+        mouse_y = numpy.interp(mouse_y, [0, SCREEN_HEIGHT], [-0.6, 0.6])
     else:
         mouse_y = -0.3842
     c_imag_loc = glGetUniformLocation(shader, "c_imag")
