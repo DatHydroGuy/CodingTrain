@@ -84,11 +84,21 @@ def display(shader, vertex_array_object, data_for_gpu, real_min, real_max, imag_
     glUseProgram(0)
 
 
+def draw_text(x, y, text):
+    position = (x, y)
+    font = pygame.font.SysFont('arial', 20)
+    text_surface = font.render(text, True, (0, 0, 255, 255)).convert_alpha()
+    text_data = pygame.image.tostring(text_surface, "RGBA", True)
+    glWindowPos2d(*position)
+    glDrawPixels(text_surface.get_width(), text_surface.get_height(), GL_RGBA, GL_UNSIGNED_BYTE, text_data)
+
+
 def main():
     pygame.init()
     pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT), pygame.OPENGL | pygame.DOUBLEBUF)
     glClearColor(0.0, 0.0, 0.1, 1.0)
-    glEnable(GL_DEPTH_TEST)
+    glEnable(GL_BLEND)
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
 
     shader = compile_shader(Path('shaders', 'fractal.vert'),
                             Path('shaders', 'mandelbrot.frag'))
@@ -113,6 +123,16 @@ def main():
     y_max = 1.5
     x_zoom = (x_max - x_min) * 0.1
     y_zoom = (y_max - y_min) * 0.1
+    show_help = False
+    help_string = """Keys:
+    L arrow: decrease X min
+    R arrow: increase X min
+    U arrow: increase Y min
+    D arrow: decrease Y min
+    KP1 arrow: decrease X max
+    KP3 arrow: increase X max
+    KP5 arrow: increase Y max
+    KP2 arrow: decrease Y max"""
 
     clock = pygame.time.Clock()
 
@@ -124,6 +144,8 @@ def main():
             if event.type == pygame.KEYUP:
                 if event.key == pygame.K_ESCAPE:
                     return
+                elif event.key == pygame.K_F1:
+                    show_help = not show_help
                 elif event.key == pygame.K_LEFT:
                     x_min -= x_zoom
                 elif event.key == pygame.K_RIGHT:
@@ -144,6 +166,11 @@ def main():
             y_zoom = (y_max - y_min) * 0.1
 
         display(shader, vertex_array_object, colour_map, x_min, x_max, y_min, y_max)
+
+        draw_text(10,
+                  SCREEN_HEIGHT - 205 if show_help else SCREEN_HEIGHT - 20,
+                  help_string if show_help else "F1 for help")
+
         pygame.display.set_caption("FPS: %.2f" % clock.get_fps())
         pygame.display.flip()
 
