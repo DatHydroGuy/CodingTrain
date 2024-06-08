@@ -55,7 +55,7 @@ def create_object(shader):
     return vertex_array_object
 
 
-def display(shader, vertex_array_object, data_for_gpu, mouse_x, mouse_y):
+def display(shader, vertex_array_object, data_for_gpu, offset, mouse_x, mouse_y):
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
     glUseProgram(shader)
 
@@ -73,6 +73,9 @@ def display(shader, vertex_array_object, data_for_gpu, mouse_x, mouse_y):
     c_imag_loc = glGetUniformLocation(shader, "c_imag")
     glUniform1f(c_imag_loc, mouse_y)
 
+    offset_loc = glGetUniformLocation(shader, "col_offset")
+    glUniform1i(offset_loc, offset)
+
     screen_width_loc = glGetUniformLocation(shader, "screen_width")
     glUniform1f(screen_width_loc, SCREEN_WIDTH)
     screen_height_loc = glGetUniformLocation(shader, "screen_height")
@@ -87,11 +90,21 @@ def display(shader, vertex_array_object, data_for_gpu, mouse_x, mouse_y):
     glUseProgram(0)
 
 
+def draw_text(x, y, text):
+    position = (x, y)
+    font = pygame.font.SysFont('arial', 20)
+    text_surface = font.render(text, True, (0, 0, 255, 255)).convert_alpha()
+    text_data = pygame.image.tostring(text_surface, "RGBA", True)
+    glWindowPos2d(*position)
+    glDrawPixels(text_surface.get_width(), text_surface.get_height(), GL_RGBA, GL_UNSIGNED_BYTE, text_data)
+
+
 def main():
     pygame.init()
     pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT), pygame.OPENGL | pygame.DOUBLEBUF)
     glClearColor(0.0, 0.0, 0.1, 1.0)
-    glEnable(GL_DEPTH_TEST)
+    glEnable(GL_BLEND)
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
 
     shader = compile_shader(Path('shaders', 'fractal.vert'),
                             Path('shaders', 'julia.frag'))
@@ -109,6 +122,8 @@ def main():
 
     col_map = reds + yellows + whites
     colour_map = numpy.array(col_map, dtype=numpy.float32)
+    colour_cycle = False
+    offset = 0
 
     clock = pygame.time.Clock()
 
@@ -127,10 +142,21 @@ def main():
             elif event.type == pygame.MOUSEMOTION:
                 mouse_x, mouse_y = event.pos
 
-            if event.type == pygame.KEYUP and event.key == pygame.K_ESCAPE:
-                return
+            if event.type == pygame.KEYUP:
+                if event.key == pygame.K_ESCAPE:
+                    return
+                elif event.key == pygame.K_SPACE:
+                    colour_cycle = not colour_cycle
 
-        display(shader, vertex_array_object, colour_map, mouse_x, mouse_y)
+        display(shader, vertex_array_object, colour_map, offset, mouse_x, mouse_y)
+
+        if colour_cycle:
+            offset = (offset + 1) % len(colour_map)
+        else:
+            offset = 0
+
+        draw_text(10, SCREEN_HEIGHT - 20, "Press space to turn colour cycling on / off")
+
         pygame.display.set_caption("FPS: %.2f" % clock.get_fps())
         pygame.display.flip()
 
