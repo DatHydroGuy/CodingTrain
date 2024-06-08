@@ -6,6 +6,7 @@ uniform float real_min;
 uniform float real_max;
 uniform float imag_min;
 uniform float imag_max;
+uniform int col_offset;
 uniform vec3 colour_map[193];
 
 float my_abs(float x) {
@@ -48,7 +49,8 @@ void main()
         gl_FragColor = vec4(vec3(0.0), 1.0);
     } else {
         float temp = map(num_iterations, 0, max_iterations, 0, 1);
-        int index = int(temp * colour_map.length() * 3);
+        int index = int(temp * colour_map.length() * 3) + col_offset;
+        index %= colour_map.length() * 3;
         vec3 col_vec = vec3(colour_map[index]);
         gl_FragColor = vec4(col_vec[0], col_vec[1], col_vec[2], 1.0);
     }

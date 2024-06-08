@@ -55,7 +55,7 @@ def create_object(shader):
     return vertex_array_object
 
 
-def display(shader, vertex_array_object, data_for_gpu, real_min, real_max, imag_min, imag_max):
+def display(shader, vertex_array_object, data_for_gpu, offset, real_min, real_max, imag_min, imag_max):
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
     glUseProgram(shader)
 
@@ -73,6 +73,9 @@ def display(shader, vertex_array_object, data_for_gpu, real_min, real_max, imag_
     glUniform1f(imag_min_loc, imag_min)
     imag_max_loc = glGetUniformLocation(shader, "imag_max")
     glUniform1f(imag_max_loc, imag_max)
+
+    offset_loc = glGetUniformLocation(shader, "col_offset")
+    glUniform1i(offset_loc, offset)
 
     colour_map_loc = glGetUniformLocation(shader, "colour_map")
     glUniform3fv(colour_map_loc, int(len(data_for_gpu) / 3), data_for_gpu)
@@ -123,8 +126,11 @@ def main():
     y_max = 1.5
     x_zoom = (x_max - x_min) * 0.1
     y_zoom = (y_max - y_min) * 0.1
+    colour_cycle = False
+    offset = 0
     show_help = False
     help_string = """Keys:
+    Space: colour cycle on/off
     L arrow: decrease X min
     R arrow: increase X min
     U arrow: increase Y min
@@ -146,6 +152,8 @@ def main():
                     return
                 elif event.key == pygame.K_F1:
                     show_help = not show_help
+                elif event.key == pygame.K_SPACE:
+                    colour_cycle = not colour_cycle
                 elif event.key == pygame.K_LEFT:
                     x_min -= x_zoom
                 elif event.key == pygame.K_RIGHT:
@@ -165,10 +173,14 @@ def main():
             x_zoom = (x_max - x_min) * 0.1
             y_zoom = (y_max - y_min) * 0.1
 
-        display(shader, vertex_array_object, colour_map, x_min, x_max, y_min, y_max)
+        display(shader, vertex_array_object, colour_map, offset, x_min, x_max, y_min, y_max)
+        if colour_cycle:
+            offset = (offset + 1) % len(colour_map)
+        else:
+            offset = 0
 
         draw_text(10,
-                  SCREEN_HEIGHT - 205 if show_help else SCREEN_HEIGHT - 20,
+                  SCREEN_HEIGHT - 225 if show_help else SCREEN_HEIGHT - 20,
                   help_string if show_help else "F1 for help")
 
         pygame.display.set_caption("FPS: %.2f" % clock.get_fps())
