@@ -1,4 +1,4 @@
-from pyfastnoise_2D_loop import Randomness
+from simplex_noise_gif_loop import SimplexNoiseGifLoop
 
 if __name__ == '__main__':
-    Randomness().start()
+    SimplexNoiseGifLoop().start()

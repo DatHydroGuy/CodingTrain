@@ -6,8 +6,6 @@ from PIL import Image
 from pygame import pixelcopy
 from numpy import interp, uint8, moveaxis, array
 from pygame._sdl2 import Window
-# from pygame_recorder import PygameRecord
-# import imageio.v3 as iio
 
 # Render final GIF with the following at the command prompt:
 # ffmpeg -f image2 -framerate 30 -i simplex_2D_loop-test%3d.png simplex_2D_loop_test_50.gif
@@ -16,8 +14,8 @@ from pygame._sdl2 import Window
 class Simplex2dNoiseGifLoop:
     def __init__(self) -> None:
         user32 = ctypes.windll.user32
-        self.screen_width = 640  # user32.GetSystemMetrics(0)
-        self.screen_height = 480  # user32.GetSystemMetrics(1)
+        self.screen_width = 300  # user32.GetSystemMetrics(0)
+        self.screen_height = 200  # user32.GetSystemMetrics(1)
 
         pygame.init()
 
@@ -30,11 +28,11 @@ class Simplex2dNoiseGifLoop:
     def start(self) -> None:
         running = True
         record = True
-        frames = 300
+        frames = 100
         counter = 0
         opensimplex.random_seed()
         filename = f"simplex_2D_loop-test{frames}.gif"
-        fps = 30
+        fps = 50
         frame_duration = int(1000 / fps)
         frame_array = []
 
@@ -71,17 +69,20 @@ class Simplex2dNoiseGifLoop:
                 x3 = pygame.surfarray.array3d(curr_surface)
                 x3 = moveaxis(x3, 0, 1)
                 image_array = Image.fromarray(uint8(x3))
-                image_array.save(f"simplex_2D_loop-test{counter:03}.png")
-                # frame_array.append(image_array)
+                # image_array.save(f"simplex_2D_loop-test{counter:03}.png")  # use this line for ffmpeg method
+                frame_array.append(image_array)                            # use this line for PIL method
             pygame.display.flip()
-            self.__clock.tick(60)
-        # if record:
-        #     if len(frame_array) > 0:
-        #         iio.imwrite(
-        #             filename,
-        #             frame_array,
-        #             fps=fps,
-        #         )
+            self.__clock.tick(50)
+        if record:
+            if len(frame_array) > 0:
+                frame_array[0].save(
+                    filename,
+                    save_all=True,
+                    optimize=False,
+                    append_images=frame_array[1:],
+                    loop=0,
+                    duration=frame_duration,
+                )
         exit()
 
     def render(self, percent):
