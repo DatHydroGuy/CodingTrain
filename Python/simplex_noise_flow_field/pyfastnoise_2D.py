@@ -22,7 +22,7 @@ class PyFastNoise2d:
         self.__clock = pygame.time.Clock()
 
         window_size = (self.screen_width, self.screen_height)
-        self.window = pygame.display.set_mode(window_size)#, pygame.DOUBLEBUF, 32)
+        self.window = pygame.display.set_mode(window_size, pygame.DOUBLEBUF, 32)
         self.screen = pygame.Surface(window_size, pygame.SRCALPHA)
 
     def start(self) -> None:
@@ -37,7 +37,7 @@ class PyFastNoise2d:
         simplex.fractal.gain = 0.45
         simplex.perturb.perturbType = fns.PerturbType.NoPerturb
 
-        scl = 20
+        scl = 10
         cols = self.screen_width // scl
         cols -= cols % np.dtype(np.float32).itemsize
         rows = self.screen_height // scl
