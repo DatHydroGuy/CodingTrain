@@ -116,6 +116,7 @@ class Plinko:
         body = pymunk.Body(mass, inertia)
         body.position = self.screen_width // 2 + uniform(-1, 1), 0
         shape = pymunk.Circle(body, radius, (0, 0))
+        shape.color = pygame.Color.from_hsla(uniform(0, 360), 100, 50, 50)
         shape.elasticity = 0.1
         shape.friction = 0.3
         self._space.add(body, shape)
