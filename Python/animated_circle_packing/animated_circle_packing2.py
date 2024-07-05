@@ -40,14 +40,14 @@ class AnimatedCirclePacking2:
             # update
             self.screen.fill((0, 0, 0))
             curr_circle_count = 0
-            attemps = 0
+            attempts = 0
             while curr_circle_count < max_circles_per_frame:
                 c = self.new_circle(circles)
                 if c is not None:
                     circles.append(c)
                     curr_circle_count += 1
-                attemps += 1
-                if attemps > 1000:
+                attempts += 1
+                if attempts > 1000:
                     break
 
             # render
