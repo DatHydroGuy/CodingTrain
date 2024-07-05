@@ -1,6 +1,6 @@
 import ctypes
 from math import hypot, fabs
-from random import uniform, randint
+from random import randint
 import pygame
 from pygame import Vector2
 from circle import Circle
@@ -42,16 +42,15 @@ class AnimatedCirclePacking:
 
             # update
             self.screen.fill((0, 0, 0))
-            # self.screen.blit(self.image, (0, 0))
             curr_circle_count = 0
-            attemps = 0
+            attempts = 0
             while curr_circle_count < max_circles_per_frame:
                 c = self.new_circle(circles)
                 if c is not None:
                     circles.append(c)
                     curr_circle_count += 1
-                attemps += 1
-                if attemps > 1000:
+                attempts += 1
+                if attempts > 1000:
                     break
 
             # render
@@ -75,8 +74,6 @@ class AnimatedCirclePacking:
 
     def new_circle(self, circles):
         rand_pix_in_image = randint(0, len(self.pixels))
-        # x = uniform(0, self.screen_width)
-        # y = uniform(0, self.screen_height)
         x = self.pixels[rand_pix_in_image][0]
         y = self.pixels[rand_pix_in_image][1]
 

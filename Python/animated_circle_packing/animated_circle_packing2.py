@@ -1,6 +1,6 @@
 import ctypes
 from math import hypot, fabs
-from random import uniform, randint
+from random import uniform
 import pygame
 from pygame import Vector2
 from circle import Circle
@@ -39,7 +39,6 @@ class AnimatedCirclePacking2:
 
             # update
             self.screen.fill((0, 0, 0))
-            # self.screen.blit(self.image, (0, 0))
             curr_circle_count = 0
             attemps = 0
             while curr_circle_count < max_circles_per_frame:
