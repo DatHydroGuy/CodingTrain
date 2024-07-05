@@ -6,11 +6,11 @@ from pygame import Vector2
 from circle import Circle
 
 
-class AnimatedCirclePacking:
+class AnimatedCirclePacking2:
     def __init__(self) -> None:
         user32 = ctypes.windll.user32
         self.screen_width = 800  # user32.GetSystemMetrics(0)
-        self.screen_height = 600  # user32.GetSystemMetrics(1)
+        self.screen_height = 800  # user32.GetSystemMetrics(1)
 
         pygame.init()
         pygame.display.set_caption("PyGame Framework")
@@ -19,13 +19,10 @@ class AnimatedCirclePacking:
 
         window_size = (self.screen_width, self.screen_height)
         self.screen = pygame.display.set_mode(window_size, pygame.DOUBLEBUF, 32)
-        image_file = pygame.image.load("res\\2024.png")
-        pixels = pygame.surfarray.pixels2d(image_file)
-        self.pixels = []
-        for i in range(pixels.shape[0]):
-            for j in range(pixels.shape[1]):
-                if pixels[i, j] > 0:
-                    self.pixels.append([i, j])
+        image_file = pygame.image.load("res\\kitten.png")
+        pixel = pygame.PixelArray(image_file)
+        self.color_array = [[image_file.unmap_rgb(pixel[x, y]) for x in range(0, image_file.get_width())] for y in
+                            range(0, image_file.get_height())]
 
     def start(self) -> None:
         circles = []
@@ -74,11 +71,8 @@ class AnimatedCirclePacking:
             pygame.display.flip()
 
     def new_circle(self, circles):
-        rand_pix_in_image = randint(0, len(self.pixels))
-        # x = uniform(0, self.screen_width)
-        # y = uniform(0, self.screen_height)
-        x = self.pixels[rand_pix_in_image][0]
-        y = self.pixels[rand_pix_in_image][1]
+        x = int(uniform(0, self.screen_width))
+        y = int(uniform(0, self.screen_height))
 
         valid = True
         for circle in circles:
@@ -88,6 +82,6 @@ class AnimatedCirclePacking:
                 break
 
         if valid:
-            return Circle(Vector2(x, y), radius=1)
+            return Circle(Vector2(x, y), self.color_array[y][x], 1, True)
         else:
             return None
