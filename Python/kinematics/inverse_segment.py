@@ -1,14 +1,13 @@
-import math
-from math import sin, cos
+from math import sin, cos, radians
 import pygame.draw
 from pygame import Vector2
 
 
 class Segment:
-    def __init__(self, position: Vector2, length, angle, width=4):
+    def __init__(self, position: Vector2, length, width=4):
         self.position = position
         self.length = length
-        self.angle = angle
+        self.angle = 0
         self.parent = None
         self.child = None
         self.end = None
@@ -18,7 +17,6 @@ class Segment:
     def add_child(self, child):
         child.parent = self
         self.child = child
-        #child.follow(self.position.x, self.position.y)  # child.position = self.get_segment_end_location()
 
     def calculate_end(self):
         self.end = self.get_segment_end_location()
@@ -28,10 +26,12 @@ class Segment:
                        self.position.y + self.length * sin(self.angle))
 
     def follow(self, target_x, target_y):
+        if target_x is None or target_y is None:
+            return
         target = Vector2(target_x, target_y)
         direction = target - self.position
-        self.angle = math.atan2(direction.y, direction.x)
-        direction = direction.clamp_magnitude(self.length)
+        self.angle = radians(direction.as_polar()[1])
+        direction = direction.normalize() * self.length
         direction *= -1
         self.position = target + direction
 
