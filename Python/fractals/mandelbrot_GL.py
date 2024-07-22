@@ -8,7 +8,6 @@ from ShaderLoader import compile_shader
 user32 = ctypes.windll.user32
 SCREEN_WIDTH = user32.GetSystemMetrics(0)
 SCREEN_HEIGHT = user32.GetSystemMetrics(1)
-NUM_METABALLS = 15
 
 vertices = [-1.0, 1.0,
             -1.0, -1.0,
