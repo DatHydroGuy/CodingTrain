@@ -1,20 +1,14 @@
-from math import hypot, radians, pi, sin, cos
-from pathlib import Path
-import ctypes
+import csv
+from math import hypot, radians, pi, sin, cos, sqrt
 import pygame
-import numpy
+from numpy import interp
+from pygame import Vector3
 from pygame.locals import *
 from OpenGL.GL import *
 from OpenGL.GLU import *
-# from ShaderLoader import compile_shader
 
-user32 = ctypes.windll.user32
-SCREEN_WIDTH = 1000  # user32.GetSystemMetrics(0)
-SCREEN_HEIGHT = 1000  # user32.GetSystemMetrics(1)
-
-
-def display():
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
+SCREEN_WIDTH = 800
+SCREEN_HEIGHT = 800
 
 
 def read_texture(filename):
@@ -30,15 +24,44 @@ def read_texture(filename):
     glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST)
     glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST)
     glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_DECAL)
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, texture_image.size[0], texture_image.size[1],
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, img_data.shape[0], img_data.shape[1],
                  0, GL_RGB, GL_UNSIGNED_BYTE, img_data.transpose(1, 0, 2))
     return texture_id
+
+
+def read_earthquake_data(sphere_radius):
+    quakes = []
+    with open(r"res\all_month.csv", encoding='utf8', newline='') as csvfile:
+        csv_reader = csv.reader(csvfile, delimiter=',', quotechar='"', dialect='unix')
+        for idx, row in enumerate(csv_reader):
+            if idx == 0:
+                continue
+            lat = float(row[1])
+            lon = float(row[2])
+            mag = float(row[4])
+            mag = sqrt(pow(10, mag))
+            max_mag = sqrt(pow(10, 10))
+            height = interp(mag, [0, max_mag], [0, 10])
+
+            theta = radians(lat) + pi / 2
+            phi = pi - radians(lon)
+            x = sphere_radius * sin(theta) * cos(phi + pi / 2)  # offset of pi/2 to account for texture mapping offset
+            y = sphere_radius * sin(theta) * sin(phi + pi / 2)  # offset of pi/2 to account for texture mapping offset
+            z = sphere_radius * cos(theta)
+
+            position = Vector3(x, y, z)
+            z_axis = Vector3(0, 0, 1)   # gluCylinder is aligned to z-axis by default, so we rotate from it
+            angle_between = z_axis.angle_to(position)
+            rotation_axis = z_axis.cross(position)
+
+            quakes.append((x, y, z, height, angle_between, rotation_axis))
+    return quakes
 
 
 def main():
     pygame.init()
     pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT), OPENGL | DOUBLEBUF)
-    glClearColor(0.0, 0.0, 0.1, 1.0)
+    glClearColor(0.0, 0.0, 0.0, 1.0)
     glEnable(GL_DEPTH_TEST)
 
     gluPerspective(40, (SCREEN_WIDTH / SCREEN_HEIGHT), 0.1, 50.0)
@@ -47,26 +70,21 @@ def main():
     prev_y_pos = 0
     zoom_in_amount = 1.05
     zoom_out_amount = 0.95
+    rotate_amount = 0.5
 
     # allow press and hold of control buttons
     pygame.key.set_repeat(1, 10)
 
-    # pre-rotate sphere to view lat, lon = 0, 0
+    # pre-rotate sphere so that we are initially viewing lat, lon = 0, 0
     glRotatef(90, 1, 0, 0)
     glRotatef(180, 0, 0, 1)
-    world_texture = read_texture(r'res\world.jpg')
-    # glRotatef(90, -1, 0, 0)
-    # glRotatef(180, 0, 0, -1)
-
-    lon = 144.9631
-    lat = -37.8136
+    read_texture(r'res\world.jpg')
 
     sphere_radius = 1
-    theta = radians(lat) + pi / 2
-    phi = pi - radians(lon)
-    x = sphere_radius * sin(theta) * cos(phi + pi / 2)  # offset of pi/2 to account for texture mapping offset
-    y = sphere_radius * sin(theta) * sin(phi + pi / 2)  # offset of pi/2 to account for texture mapping offset
-    z = sphere_radius * cos(theta)
+
+    earthquake_data = read_earthquake_data(sphere_radius)
+    glColor3f(1.0, 0.0, 1.0)  # Draw columns in magenta
+    pygame.display.set_caption("Earthquake data for the last 30 days")
 
     clock = pygame.time.Clock()
 
@@ -79,13 +97,13 @@ def main():
                     return
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_LEFT:
-                    glRotatef(1, 0, 1, 0)
+                    glRotatef(rotate_amount, 0, 0, 1)
                 if event.key == pygame.K_RIGHT:
-                    glRotatef(1, 0, -1, 0)
+                    glRotatef(rotate_amount, 0, 0, -1)
                 if event.key == pygame.K_UP:
-                    glRotatef(1, -1, 0, 0)
+                    glRotatef(rotate_amount, -1, 0, 0)
                 if event.key == pygame.K_DOWN:
-                    glRotatef(1, 1, 0, 0)
+                    glRotatef(rotate_amount, 1, 0, 0)
                 if event.key == pygame.K_KP_PLUS:
                     glScaled(zoom_in_amount, zoom_in_amount, zoom_in_amount)
                 if event.key == pygame.K_KP_MINUS:
@@ -120,24 +138,30 @@ def main():
                 prev_x_pos = mouse_x
                 prev_y_pos = mouse_y
 
-        display()
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
         quadric = gluNewQuadric()
         gluQuadricTexture(quadric, GL_TRUE)
         glEnable(GL_TEXTURE_2D)
-        glBindTexture(GL_TEXTURE_2D, world_texture)
         gluSphere(quadric, sphere_radius, 50, 50)
         gluDeleteQuadric(quadric)
         glDisable(GL_TEXTURE_2D)
 
-        glTranslated(x, y, z)
-        quadric = gluNewQuadric()
-        gluCylinder(quadric, 0.01, 0.01, 0.1, 4, 4)
-        gluDeleteQuadric(quadric)
-        glTranslated(-x, -y, -z)
+        for x, y, z, height, angle_between, rotation_axis in earthquake_data:
+            glPushMatrix()
+            glTranslated(x, y, z)
+            glRotatef(angle_between, rotation_axis.x, rotation_axis.y, rotation_axis.z)
+            quadric = gluNewQuadric()
+            gluCylinder(quadric, 0.01, 0.01, height, 4, 1)
+            gluDeleteQuadric(quadric)
+            # Add end cap to cylinders (they are hollow by default)
+            glTranslated(0, 0, height)
+            quadric = gluNewQuadric()
+            gluDisk(quadric, 0.0, 0.01, 4, 1)
+            gluDeleteQuadric(quadric)
+            glPopMatrix()
 
-        pygame.display.set_caption("FPS: %.2f" % clock.get_fps())
         pygame.display.flip()
-        clock.tick(100)
+        clock.tick(60)
 
 
 if __name__ == '__main__':
