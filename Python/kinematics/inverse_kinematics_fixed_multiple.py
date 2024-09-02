@@ -29,6 +29,7 @@ class InverseKinematics:
         ball_pos = Vector2(uniform(0, self.screen_width), uniform(0, self.screen_height))
         ball_vel = Vector2(uniform(-8, 8), uniform(-6, 6))
         ball_acc = Vector2(0, 0)
+        ball_radius = 20
 
         while 1:
             for event in pygame.event.get():
@@ -52,13 +53,13 @@ class InverseKinematics:
             for tentacle in tentacles:
                 tentacle.show(self.screen)
 
-            pygame.draw.circle(self.screen, (100, 255, 0), ball_pos, 20)
+            pygame.draw.circle(self.screen, (100, 255, 0), ball_pos, ball_radius)
 
             ball_vel += ball_acc
             ball_pos += ball_vel
-            if ball_pos.x < 0 or ball_pos.x > self.screen_width:
+            if ball_pos.x < ball_radius or ball_pos.x > self.screen_width - ball_radius:
                 ball_vel.x *= -1
-            if ball_pos.y < 0 or ball_pos.y > self.screen_height:
+            if ball_pos.y < ball_radius or ball_pos.y > self.screen_height - ball_radius:
                 ball_vel.y *= -1
 
             self.__clock.tick(60)

@@ -16,7 +16,7 @@ class Earthquakes2D:
         self.screen_height = 661
 
         pygame.init()
-        pygame.display.set_caption("PyGame Framework")
+        pygame.display.set_caption("Visualising 30 days of earthquake data")
 
         self.__clock = pygame.time.Clock()
 
