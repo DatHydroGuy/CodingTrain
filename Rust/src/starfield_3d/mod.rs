@@ -11,6 +11,7 @@ const MAX_SPEED: i16 = 20;
 #[derive(Resource)]
 struct Variables {
     star_speed: i16,
+    camera_rotation: f32,
 }
 
 #[derive(Component)]
@@ -74,7 +75,10 @@ fn setup_system(
             .insert(Star {});
     }
 
-    let variables = Variables { star_speed: 10 };
+    let variables = Variables {
+        star_speed: 10,
+        camera_rotation: 0.0,
+    };
     commands.insert_resource(variables);
 }
 
@@ -109,6 +113,7 @@ fn update_stars_system(
 
 fn keyboard_event_system(
     key: Res<ButtonInput<KeyCode>>,
+    mut query: Query<&mut Transform, With<Camera>>,
     mut exit: EventWriter<AppExit>,
     mut vars: ResMut<Variables>,
 ) {
@@ -123,6 +128,16 @@ fn keyboard_event_system(
         vars.star_speed -= 1;
         if vars.star_speed < 1 {
             vars.star_speed = 1;
+        }
+    } else if key.pressed(KeyCode::ArrowLeft) {
+        if let Ok(mut cam_trans) = query.get_single_mut() {
+            vars.camera_rotation += 0.01;
+            cam_trans.rotation = Quat::from_rotation_z(vars.camera_rotation);
+        }
+    } else if key.pressed(KeyCode::ArrowRight) {
+        if let Ok(mut cam_trans) = query.get_single_mut() {
+            vars.camera_rotation -= 0.01;
+            cam_trans.rotation = Quat::from_rotation_z(vars.camera_rotation);
         }
     }
 }
