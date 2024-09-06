@@ -8,6 +8,6 @@ fn main() {
     // double_pendulum::main();
     // phyllotaxis::main();
     // starfield::main();
-    starfield_3d::main();
-    // fireworks::main();
+    // starfield_3d::main();
+    fireworks::main();
 }
