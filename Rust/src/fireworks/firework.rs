@@ -85,6 +85,7 @@ impl Firework {
         self.vel += self.acc;
         self.pos += self.vel;
         self.acc = Vec2::ZERO;
+        self.hue = (self.hue + 2.0) % 360.0;
     }
 
     fn apply_force(&mut self, force: Vec2) {
