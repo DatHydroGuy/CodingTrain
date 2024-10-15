@@ -22,6 +22,10 @@ precision highp float;
 uniform vec3 metaballs[""" + f'{NUM_METABALLS}' + """];
 const float WIDTH = """ + f'{SCREEN_WIDTH}' + """.0;
 const float HEIGHT = """ + f'{SCREEN_HEIGHT}' + """.0;
+const float WHITE = 12.0;
+const float YELLOW = 4.0;
+const float RED = 1.5;
+const float BLACK = 0.0;
 
 void main()
 {
@@ -34,18 +38,19 @@ void main()
         float dy = mb.y - y;
         float r = mb.z;
         v += r * r / (dx * dx + dy * dy);
-        if (v > 15.0) {
+        if (v > WHITE) {
             gl_FragColor = vec4(1.0, 1.0, 1.0, 1.0);
-        } else if (v > 5.0) {
-            gl_FragColor = vec4(1.0, 1.0, 0.0, 1.0);
-        } else if (v > 2.0) {
-            gl_FragColor = vec4(1.0, 0.5, 0.0, 1.0);
-        //} else if (v > 1.0) {
-        //    gl_FragColor = vec4(1.0, 0.0, 0.0, 1.0);
-        //} else if (abs(v - 1.0) <= 0.001) {
-        //    gl_FragColor = vec4(0.0, 0.0, 1.0, 1.0);
+        } else if (v > YELLOW) {
+            float blue = smoothstep(YELLOW, WHITE, v);
+            gl_FragColor = vec4(1.0, 1.0, blue, 1.0);
+        } else if (v > RED) {
+            float green = smoothstep(RED, YELLOW, v);
+            gl_FragColor = vec4(1.0, green, 0.0, 1.0);
+        } else if (v > BLACK) {
+            float red = smoothstep(BLACK, RED, v);
+            gl_FragColor = vec4(red, 0.0, 0.0, 1.0);
         } else {
-            gl_FragColor = vec4(v, 0.0, 0.0, 1.0);
+            gl_FragColor = vec4(0.0, 0.0, 0.0, 1.0);
         }
     }
 }

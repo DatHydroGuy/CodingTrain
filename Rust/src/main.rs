@@ -1,5 +1,6 @@
 mod double_pendulum;
 mod fireworks;
+mod fourier_series;
 mod hanabi_test;
 mod julia;
 mod mandelbrot;
@@ -14,12 +15,13 @@ mod starfield_3d;
 fn main() {
     // double_pendulum::main();
     // fireworks::main();
+    fourier_series::main();
     // hanabi_test::main();
     // julia::main();
     // mandelbrot::main();
     // metaballs::main();
     // phyllotaxis::main();
-    plinko::main();
+    // plinko::main();
     // quadtrees::main();
     // scratch::main();
     // starfield::main();
