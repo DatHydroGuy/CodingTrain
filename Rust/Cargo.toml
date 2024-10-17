@@ -10,6 +10,7 @@ bevy-inspector-egui = "0.26.0"
 bevy_hanabi = "0.12.2"
 bevy_rapier2d = "0.27.0"
 bevy_vector_shapes = "0.8.2"
+noisy_bevy = "0.7.0"
 #bevy_shader_utils = "0.7.0"
 
 # Enable a small amount of optimisation in the dev profile
