@@ -9,11 +9,11 @@ const X_MIN: f32 = -2.0;
 const X_MAX: f32 = 2.0;
 const Y_MIN: f32 = -1.5;
 const Y_MAX: f32 = 1.5;
-const COLS: usize = 40;
-const ROWS: usize = 30;
-const NOISE_X_STEP: f32 = 0.05;
-const NOISE_Y_STEP: f32 = 0.05;
-const NOISE_MULTIPLIER: f32 = 0.5;
+const COLS: usize = 400;
+const ROWS: usize = 300;
+const NOISE_X_STEP: f32 = 0.012;
+const NOISE_Y_STEP: f32 = 0.012;
+const NOISE_MULTIPLIER: f32 = 0.3;
 
 #[derive(Component)]
 struct CameraMarker;
@@ -68,18 +68,7 @@ fn setup(
     mesh.insert_attribute(Mesh::ATTRIBUTE_POSITION, vertices);
 
     // Note: order matters. Order the vertices anti-clockwise, or you won't see the triangle!
-    let mut indices: Vec<u32> = Vec::new();
-    for y in 0..ROWS {
-        for x in 0..COLS {
-            let offset = (y as u32 * (COLS as u32 + 1) * 2) + x as u32 * 2;
-            indices.push(offset);
-            indices.push(offset + 1);
-            indices.push(offset + 2);
-            indices.push(offset + 2);
-            indices.push(offset + 1);
-            indices.push(offset + 3);
-        }
-    }
+    let indices = insert_index_ordering();
     mesh.insert_indices(mesh::Indices::U32(indices));
 
     // Compute normals. Works for TriangleList, but not TriangleStrip
@@ -109,12 +98,14 @@ fn setup(
         .insert(CameraMarker);
 }
 
+type Withouts = (Without<PointLight>, Without<CameraMarker>);
+type QueryFilter = (With<Transform>, Withouts);
 fn move_terrain(
     mut commands: Commands,
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<StandardMaterial>>,
     time: Res<Time>,
-    mut query: Query<Entity, (With<Transform>, Without<PointLight>, Without<CameraMarker>)>,
+    mut query: Query<Entity, QueryFilter>,
 ) {
     if let Ok(entity) = query.get_single_mut() {
         commands.entity(entity).despawn();
@@ -150,18 +141,7 @@ fn move_terrain(
         mesh.insert_attribute(Mesh::ATTRIBUTE_POSITION, vertices);
 
         // Note: order matters. Order the vertices anti-clockwise, or you won't see the triangle!
-        let mut indices: Vec<u32> = Vec::new();
-        for y in 0..ROWS {
-            for x in 0..COLS {
-                let offset = (y as u32 * (COLS as u32 + 1) * 2) + x as u32 * 2;
-                indices.push(offset);
-                indices.push(offset + 1);
-                indices.push(offset + 2);
-                indices.push(offset + 2);
-                indices.push(offset + 1);
-                indices.push(offset + 3);
-            }
-        }
+        let indices = insert_index_ordering();
         mesh.insert_indices(mesh::Indices::U32(indices));
 
         // Compute normals. Works for TriangleList, but not TriangleStrip
@@ -173,6 +153,22 @@ fn move_terrain(
             ..default()
         });
     }
+}
+
+fn insert_index_ordering() -> Vec<u32> {
+    let mut indices: Vec<u32> = Vec::new();
+    for y in 0..ROWS {
+        for x in 0..COLS {
+            let offset = (y as u32 * (COLS as u32 + 1) * 2) + x as u32 * 2;
+            indices.push(offset);
+            indices.push(offset + 1);
+            indices.push(offset + 2);
+            indices.push(offset + 2);
+            indices.push(offset + 1);
+            indices.push(offset + 3);
+        }
+    }
+    indices
 }
 
 fn move_light(time: Res<Time>, mut query: Query<&mut Transform, With<PointLight>>) {
