@@ -29,32 +29,21 @@ class TileSet:
             for other_tile in self.tiles:
                 for dy, dx in directions:
                     if dy == -1 and dx == 0:
-                        meh = Tile.compare_edges(this_tile.north_pixels, other_tile.south_pixels)
-                        if not meh:
+                        valid_neighbour = Tile.compare_edges(this_tile.north_pixels, other_tile.south_pixels)
+                        if not valid_neighbour:
                             this_tile.north_illegals.append(other_tile.id)
                     elif dy == 1 and dx == 0:
-                        meh = Tile.compare_edges(this_tile.south_pixels, other_tile.north_pixels)
-                        if not meh:
+                        valid_neighbour = Tile.compare_edges(this_tile.south_pixels, other_tile.north_pixels)
+                        if not valid_neighbour:
                             this_tile.south_illegals.append(other_tile.id)
                     elif dy == 0 and dx == 1:
-                        meh = Tile.compare_edges(this_tile.east_pixels, other_tile.west_pixels)
-                        if not meh:
+                        valid_neighbour = Tile.compare_edges(this_tile.east_pixels, other_tile.west_pixels)
+                        if not valid_neighbour:
                             this_tile.east_illegals.append(other_tile.id)
                     else:
-                        meh = Tile.compare_edges(this_tile.west_pixels, other_tile.east_pixels)
-                        if not meh:
+                        valid_neighbour = Tile.compare_edges(this_tile.west_pixels, other_tile.east_pixels)
+                        if not valid_neighbour:
                             this_tile.west_illegals.append(other_tile.id)
-
-    def get_neighbouring_entropies(self, tile_id, dx, dy, tiles):
-        curr_tile = self.tiles[tile_id]
-        if dx == 0 and dy == -1:
-            return [t for t in tiles if Tile.compare_edges(self.tiles[t].south_pixels, curr_tile.north_pixels)]
-        elif dx == 1 and dy == 0:
-            return [t for t in tiles if Tile.compare_edges(self.tiles[t].west_pixels, curr_tile.east_pixels)]
-        elif dx == 0 and dy == 1:
-            return [t for t in tiles if Tile.compare_edges(self.tiles[t].north_pixels, curr_tile.south_pixels)]
-        else:
-            return [t for t in tiles if Tile.compare_edges(self.tiles[t].east_pixels, curr_tile.west_pixels)]
 
     def read_tile_set(self, folder):
         id_num = 0

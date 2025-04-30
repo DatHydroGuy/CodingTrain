@@ -13,7 +13,7 @@ def main():
     screen.fill((0, 0, 0))
     pygame.display.set_caption("Wave Function Collapse in Python")
     tile_set = TileSet(r'tilesets\Castle')
-    grid = Grid(screen_size, tile_set, 50, 37)
+    grid = Grid(screen_size, tile_set, 50, 37, scaling=4)
     y, x = grid.get_lowest_entropy_cell()
     first_tile = choice(tile_set.tiles)
     grid.collapse(x, y, first_tile.id, [n for n in grid.grid[y][x]["entropy"] if n != first_tile.id])
@@ -21,6 +21,7 @@ def main():
     clock = pygame.time.Clock()
     running = True
     debugging = False
+    collapsing = True
     while running:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -33,10 +34,15 @@ def main():
                     debugging = not debugging
 
         grid.draw(screen, debugging)
-        y, x = grid.get_lowest_entropy_cell()
-        if x is not None and y is not None:
-            next_tile_id = choice(grid.grid[y][x]["entropy"])
-            grid.collapse(x, y, next_tile_id, [n for n in grid.grid[y][x]["entropy"] if n != next_tile_id])
+
+        if collapsing:
+            y, x = grid.get_lowest_entropy_cell()
+            if x is not None and y is not None:
+                next_tile_id = choice(grid.grid[y][x]["entropy"])
+                grid.collapse(x, y, next_tile_id, [n for n in grid.grid[y][x]["entropy"] if n != next_tile_id])
+            else:
+                print("Finished")
+                collapsing = False
 
         pygame.display.flip()
         clock.tick(60)

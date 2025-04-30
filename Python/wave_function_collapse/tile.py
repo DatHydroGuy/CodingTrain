@@ -29,11 +29,9 @@ class Tile:
         self.east_pixels = self.pixels[:, -1]
 
     def set_south_edge_pixels(self):
-        # self.south_pixels = self.pixels[-1, ::-1]
         self.south_pixels = self.pixels[-1, :]
 
     def set_west_edge_pixels(self):
-        # self.west_pixels = self.pixels[::-1, 0]
         self.west_pixels = self.pixels[:, 0]
 
     def draw(self, surface, top_left_x, top_left_y, scaling):
@@ -58,8 +56,6 @@ class Tile:
         diff = np.abs(edge_a.astype(int) - edge_b.astype(int))
 
         # A pixel matches if all RGB channels are within tolerance
-        # tolerance_array = np.array([colour_tolerance, colour_tolerance, colour_tolerance])
-        # pixel_matches = [all(d <= tolerance_array) for d in diff]
         pixel_matches = np.all(diff <= colour_tolerance, axis=1)
 
         # Count how many pixels matched

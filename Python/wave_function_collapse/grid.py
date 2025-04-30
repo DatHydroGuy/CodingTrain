@@ -3,11 +3,8 @@ from random import choice
 import pygame
 
 
-# directions = [(-1, 0), (0, 1), (1, 0), (0, -1)]     # (dy, dx)
-
-
 class Grid:
-    def __init__(self, screen_size, tile_set, width_in_cells, height_in_cells):
+    def __init__(self, screen_size, tile_set, width_in_cells, height_in_cells, scaling=1):
         self.screen_size = screen_size
         self.tile_set = tile_set
         self.width_in_cells = width_in_cells
@@ -15,7 +12,7 @@ class Grid:
         self.cell_size = min(self.screen_size[0] // self.width_in_cells, self.screen_size[1] // self.height_in_cells)
         self.num_tiles = len(self.tile_set.tiles)
         self.tile_size = tile_set.tile_size()
-        self.scaling = 4
+        self.scaling = scaling
         self.draw_size = (self.tile_size[0] * self.scaling, self.tile_size[1] * self.scaling)
         self.max_manhattan = width_in_cells + height_in_cells - 1
         self.grid = [
@@ -44,7 +41,7 @@ class Grid:
             # ensure invalid tile value is not in the entropy list we're about to restore
             old_grid[y_index][x_index]['entropy'] = [n for n in old_grid[y_index][x_index]['entropy'] if n != tile_id]
             # restore last good grid
-            self.grid = deepcopy(old_grid)      # program can hang here.  WHY???????
+            self.grid = deepcopy(old_grid)
             # choose a new tile to collapse to
             new_choice = choice(choices)
             # try it out
@@ -58,7 +55,7 @@ class Grid:
 
     def propagate(self, x_index, y_index, tile_id):
         for manhattan_dist in range(self.max_manhattan):
-            # print(f"Manhattan Distance: {manhattan_dist}")
+
             for y in range(self.height_in_cells):
                 y_diff = y - y_index
                 if y_diff == 0:
@@ -330,9 +327,6 @@ class Grid:
             return lowest[0]
         else:
             return choice(lowest)
-
-    # def backtrack(self):
-    #     self.grid = deepcopy(self.grid_copy)
 
     def draw(self, surface, debugging=False):
         for y in range(self.height_in_cells):
