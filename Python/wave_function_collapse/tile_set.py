@@ -4,16 +4,13 @@ from PIL import Image
 from tile import Tile
 
 
-directions = [(-1, 0), (0, 1), (1, 0), (0, -1)]     # (dy, dx)
-
-
 class TileSet:
-    def __init__(self, folder=None):
+    def __init__(self, folder=None, colour_tolerance=0, match_ratio=1.0, max_mismatch_run=1):
         self.tiles = []
         self.neighbours = []
         if folder is not None:
             self.read_tile_set(folder)
-            self.get_illegal_neighbours()
+            self.get_illegal_neighbours(colour_tolerance, match_ratio, max_mismatch_run)
 
     def __len__(self):
         return len(self.tiles)
@@ -24,26 +21,24 @@ class TileSet:
     def tile_size(self):
         return self.tiles[0].pixels.shape[:2]
 
-    def get_illegal_neighbours(self):
+    def get_illegal_neighbours(self, colour_tolerance, match_ratio, max_mismatch_run):
         for this_tile in self.tiles:
             for other_tile in self.tiles:
-                for dy, dx in directions:
-                    if dy == -1 and dx == 0:
-                        valid_neighbour = Tile.compare_edges(this_tile.north_pixels, other_tile.south_pixels)
-                        if not valid_neighbour:
-                            this_tile.north_illegals.append(other_tile.id)
-                    elif dy == 1 and dx == 0:
-                        valid_neighbour = Tile.compare_edges(this_tile.south_pixels, other_tile.north_pixels)
-                        if not valid_neighbour:
-                            this_tile.south_illegals.append(other_tile.id)
-                    elif dy == 0 and dx == 1:
-                        valid_neighbour = Tile.compare_edges(this_tile.east_pixels, other_tile.west_pixels)
-                        if not valid_neighbour:
-                            this_tile.east_illegals.append(other_tile.id)
-                    else:
-                        valid_neighbour = Tile.compare_edges(this_tile.west_pixels, other_tile.east_pixels)
-                        if not valid_neighbour:
-                            this_tile.west_illegals.append(other_tile.id)
+                valid_neighbour = Tile.compare_edges(this_tile.north_pixels, other_tile.south_pixels, colour_tolerance, match_ratio, max_mismatch_run)
+                if not valid_neighbour:
+                    this_tile.north_illegals.append(other_tile.id)
+
+                valid_neighbour = Tile.compare_edges(this_tile.south_pixels, other_tile.north_pixels, colour_tolerance, match_ratio, max_mismatch_run)
+                if not valid_neighbour:
+                    this_tile.south_illegals.append(other_tile.id)
+
+                valid_neighbour = Tile.compare_edges(this_tile.east_pixels, other_tile.west_pixels, colour_tolerance, match_ratio, max_mismatch_run)
+                if not valid_neighbour:
+                    this_tile.east_illegals.append(other_tile.id)
+
+                valid_neighbour = Tile.compare_edges(this_tile.west_pixels, other_tile.east_pixels, colour_tolerance, match_ratio, max_mismatch_run)
+                if not valid_neighbour:
+                    this_tile.west_illegals.append(other_tile.id)
 
     def read_tile_set(self, folder):
         id_num = 0

@@ -12,7 +12,7 @@ def main():
     screen = pygame.display.set_mode(screen_size)
     screen.fill((0, 0, 0))
     pygame.display.set_caption("Wave Function Collapse in Python")
-    tile_set = TileSet(r'tilesets\Castle')
+    tile_set = TileSet(r'tilesets\Castle', colour_tolerance=20, match_ratio=0.5, max_mismatch_run=1)
     grid = Grid(screen_size, tile_set, 50, 37, scaling=4)
     y, x = grid.get_lowest_entropy_cell()
     first_tile = choice(tile_set.tiles)
