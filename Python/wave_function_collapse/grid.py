@@ -54,7 +54,7 @@ class Grid:
         return self.propagate(x_index, y_index, tile_id)
 
     def propagate(self, x_index, y_index, tile_id):
-        for manhattan_dist in range(self.max_manhattan):
+        for manhattan_dist in range(1, self.max_manhattan):
 
             for y in range(self.height_in_cells):
                 y_diff = y - y_index

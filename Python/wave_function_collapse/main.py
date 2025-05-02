@@ -1,20 +1,25 @@
 from random import choice
 import pygame
+
 from grid import Grid
 from tile_set import TileSet
 
 
 def main():
-    screen_size = (1400, 1050)
-    default_tile_scaling = 2
+    window_size = (1400, 1050)
+    default_tile_scaling = 1
     tile_set = TileSet(r'tilesets\Circuit', colour_tolerance=10, match_ratio=0.7, max_mismatch_run=1)
-    horizonal_cells = screen_size[0] // (default_tile_scaling * tile_set.tile_size[1])
-    vertical_cells = screen_size[1] // (default_tile_scaling * tile_set.tile_size[0])
-    grid = Grid(screen_size, tile_set, horizonal_cells, vertical_cells, scaling=default_tile_scaling)
+    horizonal_cells = window_size[0] // (default_tile_scaling * tile_set.tile_size[1])
+    vertical_cells = window_size[1] // (default_tile_scaling * tile_set.tile_size[0])
+    grid = Grid(window_size, tile_set, horizonal_cells, vertical_cells, scaling=1)
 
     pygame.init()
 
-    screen = pygame.display.set_mode(screen_size)
+    screen_size = (window_size[0] // default_tile_scaling, window_size[1] // default_tile_scaling)
+    screen = pygame.Surface(screen_size)
+    width_offset = (window_size[0] - horizonal_cells * default_tile_scaling * tile_set.tile_size[1]) // 2
+    height_offset = (window_size[1] - vertical_cells * default_tile_scaling * tile_set.tile_size[0]) // 2
+    window_surface = pygame.display.set_mode(window_size)
     screen.fill((0, 0, 0))
     pygame.display.set_caption("Wave Function Collapse in Python")
 
@@ -38,6 +43,7 @@ def main():
                     debugging = not debugging
 
         grid.draw(screen, debugging)
+        scaled_screen = pygame.transform.scale(screen, window_size)
 
         if collapsing:
             y, x = grid.get_lowest_entropy_cell()
@@ -48,6 +54,7 @@ def main():
                 print("Finished")
                 collapsing = False
 
+        window_surface.blit(scaled_screen, (width_offset, height_offset))
         pygame.display.flip()
         clock.tick(60)
 
