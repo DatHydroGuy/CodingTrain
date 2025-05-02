@@ -168,6 +168,15 @@ cython_debug/
 .idea/**/usage.statistics.xml
 .idea/**/dictionaries
 .idea/**/shelf
+.idea/**/*.?ml
+.idea/.gitignore
+
+# Archive folders
+Python/archive
+Rust/archive
+
+Python/.idea
+Rust/Cargo.lock
 
 # AWS User-specific
 .idea/**/aws.xml
