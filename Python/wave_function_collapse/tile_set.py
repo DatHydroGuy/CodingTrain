@@ -7,7 +7,7 @@ from tile import Tile
 class TileSet:
     def __init__(self, folder=None, colour_tolerance=0, match_ratio=1.0, max_mismatch_run=1):
         self.tiles = []
-        self.neighbours = []
+        self.tile_size = (None, None)
         if folder is not None:
             self.read_tile_set(folder)
             self.get_illegal_neighbours(colour_tolerance, match_ratio, max_mismatch_run)
@@ -18,8 +18,8 @@ class TileSet:
     def add_tile(self, tile):
         self.tiles.append(tile)
 
-    def tile_size(self):
-        return self.tiles[0].pixels.shape[:2]
+    # def tile_size(self):
+    #     return self.tiles[0].pixels.shape[:2]
 
     def get_illegal_neighbours(self, colour_tolerance, match_ratio, max_mismatch_run):
         for this_tile in self.tiles:
@@ -42,11 +42,18 @@ class TileSet:
 
     def read_tile_set(self, folder):
         id_num = 0
+        tile_sizes = []
         for root, dirs, files in os.walk(folder):
             for filename in files:
                 if filename.endswith('.png'):
                     orig_pixels = self.read_image_into_pixels(os.path.join(root, filename))
-                    self.add_tile(Tile(orig_pixels, id_num))
+                    if orig_pixels.shape[0] != orig_pixels.shape[1]:
+                        raise Exception('Non-square tiles detected')
+                    tile_sizes.append(orig_pixels.shape[:2])
+                    if len(tile_sizes) > 0:
+                        if tile_sizes[-1] != tile_sizes[0]:
+                            raise Exception('Different tile sizes detected')
+                        self.add_tile(Tile(orig_pixels, id_num))
                     id_num += 1
                     pixels = np.rot90(orig_pixels)
                     if not any([np.array_equal(pixels, tile.pixels) for tile in self.tiles]):
@@ -68,6 +75,7 @@ class TileSet:
                     if not any([np.array_equal(pixels, tile.pixels) for tile in self.tiles]):
                         self.add_tile(Tile(pixels, id_num))
                         id_num += 1
+        self.tile_size = tile_sizes[0]
 
     @staticmethod
     def read_image_into_pixels(image):

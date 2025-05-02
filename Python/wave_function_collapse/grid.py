@@ -11,7 +11,7 @@ class Grid:
         self.height_in_cells = height_in_cells
         self.cell_size = min(self.screen_size[0] // self.width_in_cells, self.screen_size[1] // self.height_in_cells)
         self.num_tiles = len(self.tile_set.tiles)
-        self.tile_size = tile_set.tile_size()
+        self.tile_size = tile_set.tile_size
         self.scaling = scaling
         self.draw_size = (self.tile_size[0] * self.scaling, self.tile_size[1] * self.scaling)
         self.max_manhattan = width_in_cells + height_in_cells - 1
