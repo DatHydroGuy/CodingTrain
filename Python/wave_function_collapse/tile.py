@@ -35,19 +35,23 @@ class Tile:
         self.west_pixels = self.pixels[:, 0]
 
     def draw(self, surface, top_left_x, top_left_y, scaling):
-        for ty in range(self.pixels.shape[0]):
-            for tx in range(self.pixels.shape[1]):
-                pygame.draw.rect(
-                    surface,
-                    self.pixels[ty, tx],
-                    (
-                        top_left_x + tx * scaling,
-                        top_left_y + ty * scaling,
-                        scaling,
-                        scaling,
-                    ),
-                    0,
-                )
+        # Transpose pixel array from (H, W, C) to (W, H, C)
+        blit_array = np.transpose(self.pixels, (1, 0, 2))
+
+        # Create a pygame surface from the numpy array
+        temp_surface = pygame.Surface((blit_array.shape[0], blit_array.shape[1]))
+
+        # Faster way to transfer numpy data to pygame surface
+        pygame.surfarray.blit_array(temp_surface, blit_array)
+
+        # Scale and blit
+        scaled = pygame.transform.scale(
+            temp_surface,
+            # (self.pixels.shape[1] * scaling, self.pixels.shape[0] * scaling),
+            (blit_array.shape[0], blit_array.shape[1]),
+        )
+
+        surface.blit(scaled, (top_left_x, top_left_y))
 
     # Circuit:     def compare_edges(edge_a, edge_b, colour_tolerance=10, match_ratio=0.7, max_mismatch_run=1):
     @staticmethod
