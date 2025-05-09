@@ -14,9 +14,8 @@ class Grid:
         self.num_tiles = len(self.tile_set.tiles)
         self.tile_size = tile_set.tile_size
         self.scaling = scaling
-        # self.draw_size = (self.tile_size[0] * self.scaling, self.tile_size[1] * self.scaling)
         self.draw_size = (self.tile_size[0], self.tile_size[1])
-        # self.max_manhattan = width_in_cells + height_in_cells - 1
+        self.wrap = wrap
 
         # Optimise grid structure with numpy arrays
         # -1 indicates not collapsed (no tile assigned)
@@ -56,9 +55,6 @@ class Grid:
                 print(f"Backtracked using snapshots. Snapshot stack length = {len(self.grid_copy)}")
                 success = False
                 continue
-
-            # # ensure invalid tile value is not in the entropy list we're about to restore
-            # old_grid[y_index][x_index]['entropy'] = [n for n in old_grid[y_index][x_index]['entropy'] if n != tile_id]
 
             # restore last good grid
             self.tiles = old_tiles.copy()
@@ -105,9 +101,16 @@ class Grid:
             for direction_number, (y_diff, x_diff) in enumerate(self.directions):
                 neighbour_y, neighbour_x = current_y + y_diff, current_x + x_diff
 
-                # Skip if outside bounds
-                if not (0 <= neighbour_y < self.height_in_cells and 0 <= neighbour_x < self.width_in_cells):
-                    continue
+                if self.wrap:
+                    if neighbour_x == self.width_in_cells:
+                        neighbour_x = 0
+
+                    if neighbour_y >= self.height_in_cells:
+                        neighbour_y = 0
+                else:
+                    # Skip if outside bounds
+                    if not (0 <= neighbour_y < self.height_in_cells and 0 <= neighbour_x < self.width_in_cells):
+                        continue
 
                 # If current cell is collapsed, remove incompatible neighbours
                 if current_tile != -1:
@@ -117,26 +120,8 @@ class Grid:
                     # If neighbour isn't collapsed yet
                     if self.tiles[neighbour_y, neighbour_x] == -1:
                         # Remove illegal options
-                        changed = False
-                        for illegal in illegals:
-                            if self.entropy[neighbour_y, neighbour_x, illegal]:
-                                self.entropy[neighbour_y, neighbour_x, illegal] = False
-                                changed = True
-
-                        # If changes were made, check for contradictions and add to queue
-                        if changed:
-                            # Check if this cell still has valid options
-                            if not np.any(self.entropy[neighbour_y, neighbour_x]):
-                                return False  # Contradiction
-
-                            # If only one option left, collapse it
-                            if np.sum(self.entropy[neighbour_y, neighbour_x]) == 1:
-                                tile_id = np.where(self.entropy[neighbour_y, neighbour_x])[0][0]
-                                self.tiles[neighbour_y, neighbour_x] = tile_id
-
-                            # Add neighbour to queue
-                            if (neighbour_y, neighbour_x) not in processed:
-                                queue.append((neighbour_y, neighbour_x))
+                        if not self.apply_constraints(neighbour_x, neighbour_y, illegals, queue, processed):
+                            return False
 
                 else:
                     # Current cell not collapsed, constrain based on possible valid tiles
@@ -156,27 +141,36 @@ class Grid:
                             common_illegals = set.intersection(*all_illegals)
 
                             # Apply constraints
-                            changed = False
-                            for illegal in common_illegals:
-                                if self.entropy[neighbour_y, neighbour_x, illegal]:
-                                    self.entropy[neighbour_y, neighbour_x, illegal] = False
-                                    changed = True
-
-                            # If changes were made, check for contradictions
-                            if changed:
-                                if not np.any(self.entropy[neighbour_y, neighbour_x]):
-                                    return False  # Contradiction
-
-                                # If only one option left, collapse it
-                                if np.sum(self.entropy[neighbour_y, neighbour_x]) == 1:
-                                    tile_id = np.where(self.entropy[neighbour_y, neighbour_x])[0][0]
-                                    self.tiles[neighbour_y, neighbour_x] = tile_id
-
-                                # Add to queue for further propagation
-                                if (neighbour_y, neighbour_x) not in processed:
-                                    queue.append((neighbour_y, neighbour_x))
+                            if not self.apply_constraints(neighbour_x, neighbour_y, common_illegals, queue, processed):
+                                return False
 
         return True  # No contradictions found
+
+    def apply_constraints(self, neighbour_x, neighbour_y, illegals, queue, processed):
+        changed = False
+
+        # Remove illegal neighbour options
+        for illegal in illegals:
+            if self.entropy[neighbour_y, neighbour_x, illegal]:
+                self.entropy[neighbour_y, neighbour_x, illegal] = False
+                changed = True
+
+        # If changes were made, check for contradictions and add to queue
+        if changed:
+            # Check if this cell still has valid options
+            if not np.any(self.entropy[neighbour_y, neighbour_x]):
+                return False  # Contradiction
+
+            # If only one option left, collapse it
+            if np.sum(self.entropy[neighbour_y, neighbour_x]) == 1:
+                tile_id = np.where(self.entropy[neighbour_y, neighbour_x])[0][0]
+                self.tiles[neighbour_y, neighbour_x] = tile_id
+
+            # Add neighbour to queue
+            if (neighbour_y, neighbour_x) not in processed:
+                queue.append((neighbour_y, neighbour_x))
+
+        return True
 
     def get_lowest_entropy_cell(self):
 
