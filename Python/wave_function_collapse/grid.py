@@ -5,7 +5,7 @@ from collections import deque
 
 
 class Grid:
-    def __init__(self, screen_size, tile_set, width_in_cells, height_in_cells, scaling=1):
+    def __init__(self, screen_size, tile_set, width_in_cells, height_in_cells, scaling=1, wrap=False):
         self.screen_size = screen_size
         self.tile_set = tile_set
         self.width_in_cells = width_in_cells
@@ -44,9 +44,6 @@ class Grid:
             lambda tile: self.tile_set.tiles[tile].south_illegals,  # South
             lambda tile: self.tile_set.tiles[tile].west_illegals,   # West
         ]
-
-        # # Precompute opposite directions for constraint propagation
-        # self.opposite_dir = [2, 3, 0, 1]  # South, West, North, East
 
     def collapse(self, x_index, y_index, tile_id, remaining_choices):
         success = self.collapse_tile(x_index, y_index, tile_id, remaining_choices)
@@ -147,9 +144,6 @@ class Grid:
 
                     # If neighbour not collapsed, constrain based on all possible tiles
                     if self.tiles[neighbour_y, neighbour_x] == -1:
-                        # # For each direction, find tiles that would be illegal from ALL possible current tiles
-                        # opp_dir = self.opposite_dir[direction_number]
-
                         # Get all illegals for this direction from all possible tiles
                         all_illegals = []
                         for tile in possible_tiles:
@@ -183,284 +177,8 @@ class Grid:
                                     queue.append((neighbour_y, neighbour_x))
 
         return True  # No contradictions found
-        #
-        #
-        #
-        #
-        #
-        # for manhattan_dist in range(1, self.max_manhattan):
-        #
-        #     for y in range(self.height_in_cells):
-        #         y_diff = y - y_index
-        #         if y_diff == 0:
-        #
-        #             for x in range(self.width_in_cells):
-        #                 x_diff = x - x_index
-        #                 if abs(y_diff) + abs(x_diff) != manhattan_dist:
-        #                     continue
-        #
-        #                 else:
-        #                     if x_diff == 0:
-        #                         # print(f"({x}, {y}) IS THE SAME CELL AS ({x_index}, {y_index})")
-        #                         continue
-        #                     elif x_diff > 0:
-        #                         # print(f"({x}, {y}) is East of ({x_index}, {y_index})")
-        #                         if manhattan_dist == 1:
-        #                             # remove illegal Eastern neighbours of grid[y_index][x_index] from grid[y][x]
-        #                             removals = self.tile_set.tiles[tile_id].east_illegals
-        #                             if type(self.grid[y][x]['tile']) is type(None):
-        #                                 self.grid[y][x]["entropy"] = [x for x in self.grid[y][x]["entropy"] if x not in removals]
-        #                                 if len(self.grid[y][x]['entropy']) == 0:
-        #                                     return False
-        #                         else:
-        #                             # remove all illegal Eastern neighbours of entropies in grid[y][x - 1] from grid[y][x]
-        #                             # if an entry is in ALL east illegals for all entropy values, then it's a valid removal.  If it's missing from even one, we keep it as a possible.
-        #                             illegals = [
-        #                                 self.tile_set.tiles[entropy].east_illegals
-        #                                 for entropy in self.grid[y][x - 1]["entropy"]
-        #                             ]
-        #                             removals = set.intersection(*[set(x) for x in illegals]) if len(illegals) > 0 else set()
-        #
-        #                             if type(self.grid[y][x]['tile']) is type(None):
-        #                                 self.grid[y][x]["entropy"] = [x for x in self.grid[y][x]["entropy"] if x not in removals]
-        #                                 if len(self.grid[y][x]['entropy']) == 0:
-        #                                     return False
-        #                     else:
-        #                         # print(f"({x}, {y}) is West of ({x_index}, {y_index})")
-        #                         if manhattan_dist == 1:
-        #                             # remove illegal Western neighbours of grid[y_index][x_index] from grid[y][x]
-        #                             removals = self.tile_set.tiles[tile_id].west_illegals
-        #                             if type(self.grid[y][x]['tile']) is type(None):
-        #                                 self.grid[y][x]["entropy"] = [x for x in self.grid[y][x]["entropy"] if x not in removals]
-        #                                 if len(self.grid[y][x]['entropy']) == 0:
-        #                                     return False
-        #                         else:
-        #                             # remove all illegal Western neighbours of entropies in grid[y][x + 1] from grid[y][x]
-        #                             # if an entry is in ALL west illegals for all entropy values, then it's a valid removal.  If it's missing from even one, we keep it as a possible.
-        #                             illegals = [
-        #                                 self.tile_set.tiles[entropy].west_illegals
-        #                                 for entropy in self.grid[y][x + 1]["entropy"]
-        #                             ]
-        #                             removals = set.intersection(*[set(x) for x in illegals]) if len(illegals) > 0 else set()
-        #
-        #                             if type(self.grid[y][x]['tile']) is type(None):
-        #                                 self.grid[y][x]["entropy"] = [x for x in self.grid[y][x]["entropy"] if x not in removals]
-        #                                 if len(self.grid[y][x]['entropy']) == 0:
-        #                                     return False
-        #
-        #         elif y_diff > 0:
-        #
-        #             for x in range(self.width_in_cells):
-        #                 x_diff = x - x_index
-        #                 if abs(y_diff) + abs(x_diff) != manhattan_dist:
-        #                     continue
-        #
-        #                 else:
-        #                     if x_diff == 0:
-        #                         # print(f"({x}, {y}) is South of ({x_index}, {y_index})")
-        #                         if manhattan_dist == 1:
-        #                             # remove illegal Southern neighbours of grid[y_index][x_index] from grid[y][x]
-        #                             removals = self.tile_set.tiles[tile_id].south_illegals
-        #                             if type(self.grid[y][x]['tile']) is type(None):
-        #                                 self.grid[y][x]["entropy"] = [x for x in self.grid[y][x]["entropy"] if x not in removals]
-        #                                 if len(self.grid[y][x]['entropy']) == 0:
-        #                                     return False
-        #                         else:
-        #                             # remove all illegal Southern neighbours of entropies in grid[y - 1][x] from grid[y][x]
-        #                             # if an entry is in ALL south illegals for all entropy values, then it's a valid removal.  If it's missing from even one, we keep it as a possible.
-        #                             illegals = [
-        #                                 self.tile_set.tiles[entropy].south_illegals
-        #                                 for entropy in self.grid[y - 1][x]["entropy"]
-        #                             ]
-        #                             removals = set.intersection(*[set(x) for x in illegals]) if len(illegals) > 0 else set()
-        #
-        #                             if type(self.grid[y][x]['tile']) is type(None):
-        #                                 self.grid[y][x]["entropy"] = [x for x in self.grid[y][x]["entropy"] if x not in removals]
-        #                                 if len(self.grid[y][x]["entropy"]) == 0:
-        #                                     return False
-        #
-        #                     elif x_diff > 0:
-        #                         # print(f"({x}, {y}) is South-East of ({x_index}, {y_index})")
-        #
-        #                         # remove all illegal Southern neighbours of entropies in grid[y - 1][x] from grid[y][x]
-        #                         south_illegals = [
-        #                             self.tile_set.tiles[entropy].south_illegals
-        #                             for entropy in self.grid[y - 1][x]["entropy"]
-        #                         ]
-        #
-        #                         # if an entry is in ALL south illegals for all entropy values, then it's a valid removal.  If it's missing from even one, we keep it as a possible.
-        #                         south_removals = set.intersection(*[set(x) for x in south_illegals]) if len(south_illegals) > 0 else set()
-        #
-        #                         # remove all illegal Eastern neighbours of entropies in grid[y][x - 1] from grid[y][x]
-        #                         east_illegals = [
-        #                             self.tile_set.tiles[entropy].east_illegals
-        #                             for entropy in self.grid[y][x - 1]["entropy"]
-        #                         ]
-        #
-        #                         # if an entry is in ALL south illegals for all entropy values, then it's a valid removal.  If it's missing from even one, we keep it as a possible.
-        #                         east_removals = set.intersection(*[set(x) for x in east_illegals]) if len(east_illegals) > 0 else set()
-        #
-        #                         # if an entry is in either the south removal list OR the west removal list, we remove it
-        #                         removals = set.union(set(south_removals), set(east_removals))
-        #
-        #                         if type(self.grid[y][x]["tile"]) is type(None):
-        #                             self.grid[y][x]["entropy"] = [
-        #                                 x
-        #                                 for x in self.grid[y][x]["entropy"]
-        #                                 if x not in removals
-        #                             ]
-        #                             if len(self.grid[y][x]["entropy"]) == 0:
-        #                                 return False
-        #
-        #                     else:
-        #                         # print(f"({x}, {y}) is South-West of ({x_index}, {y_index})")
-        #                         # remove all illegal Southern neighbours of entropies in grid[y - 1][x] from grid[y][x]
-        #                         south_illegals = [
-        #                             self.tile_set.tiles[entropy].south_illegals
-        #                             for entropy in self.grid[y - 1][x]["entropy"]
-        #                         ]
-        #
-        #                         # if an entry is in ALL south illegals for all entropy values, then it's a valid removal.  If it's missing from even one, we keep it as a possible.
-        #                         south_removals = set.intersection(*[set(x) for x in south_illegals]) if len(south_illegals) > 0 else set()
-        #
-        #                         # remove all illegal Western neighbours of entropies in grid[y][x + 1] from grid[y][x]
-        #                         west_illegals = [
-        #                             self.tile_set.tiles[entropy].west_illegals
-        #                             for entropy in self.grid[y][x + 1]["entropy"]
-        #                         ]
-        #
-        #                         # if an entry is in ALL south illegals for all entropy values, then it's a valid removal.  If it's missing from even one, we keep it as a possible.
-        #                         west_removals = set.intersection(*[set(x) for x in west_illegals]) if len(west_illegals) > 0 else set()
-        #
-        #                         # if an entry is in either the south removal list OR the west removal list, we remove it
-        #                         removals = set.union(set(south_removals), set(west_removals))
-        #
-        #                         if type(self.grid[y][x]["tile"]) is type(None):
-        #                             self.grid[y][x]["entropy"] = [
-        #                                 x
-        #                                 for x in self.grid[y][x]["entropy"]
-        #                                 if x not in removals
-        #                             ]
-        #                             if len(self.grid[y][x]["entropy"]) == 0:
-        #                                 return False
-        #
-        #         else:
-        #
-        #             for x in range(self.width_in_cells):
-        #                 x_diff = x - x_index
-        #                 if abs(y_diff) + abs(x_diff) != manhattan_dist:
-        #                     continue
-        #
-        #                 else:
-        #                     if x_diff == 0:
-        #                         # print(f"({x}, {y}) is North of ({x_index}, {y_index})")
-        #                         if manhattan_dist == 1:
-        #                             # remove illegal Northern neighbours of grid[y_index][x_index] from grid[y][x]
-        #                             removals = self.tile_set.tiles[tile_id].north_illegals
-        #                             if type(self.grid[y][x]['tile']) is type(None):
-        #                                 self.grid[y][x]["entropy"] = [x for x in self.grid[y][x]["entropy"] if x not in removals]
-        #                                 if len(self.grid[y][x]['entropy']) == 0:
-        #                                     return False
-        #                         else:
-        #                             # remove all illegal Northern neighbours of entropies in grid[y + 1][x] from grid[y][x]
-        #                             # if an entry is in ALL north illegals for all entropy values, then it's a valid removal.  If it's missing from even one, we keep it as a possible.
-        #                             illegals = [
-        #                                 self.tile_set.tiles[entropy].north_illegals
-        #                                 for entropy in self.grid[y + 1][x]["entropy"]
-        #                             ]
-        #                             removals = set.intersection(*[set(x) for x in illegals]) if len(illegals) > 0 else set()
-        #
-        #                             if type(self.grid[y][x]['tile']) is type(None):
-        #                                 self.grid[y][x]["entropy"] = [x for x in self.grid[y][x]["entropy"] if x not in removals]
-        #                                 if len(self.grid[y][x]['entropy']) == 0:
-        #                                     return False
-        #
-        #                     elif x_diff > 0:
-        #                         # print(f"({x}, {y}) is North-East of ({x_index}, {y_index})")
-        #                         # remove all illegal Northern neighbours of entropies in grid[y + 1][x] from grid[y][x]
-        #                         north_illegals = [
-        #                             self.tile_set.tiles[entropy].north_illegals
-        #                             for entropy in self.grid[y + 1][x]["entropy"]
-        #                         ]
-        #
-        #                         # if an entry is in ALL north illegals for all entropy values, then it's a valid removal.  If it's missing from even one, we keep it as a possible.
-        #                         north_removals = set.intersection(*[set(x) for x in north_illegals]) if len(north_illegals) > 0 else set()
-        #
-        #                         # remove all illegal Eastern neighbours of entropies in grid[y][x - 1] from grid[y][x]
-        #                         east_illegals = [
-        #                             self.tile_set.tiles[entropy].east_illegals
-        #                             for entropy in self.grid[y][x - 1]["entropy"]
-        #                         ]
-        #
-        #                         # if an entry is in ALL north illegals for all entropy values, then it's a valid removal.  If it's missing from even one, we keep it as a possible.
-        #                         east_removals = set.intersection(*[set(x) for x in east_illegals]) if len(east_illegals) > 0 else set()
-        #
-        #                         # if an entry is in either the north removal list OR the east removal list, we remove it
-        #                         removals = set.union(set(north_removals), set(east_removals))
-        #
-        #                         if type(self.grid[y][x]["tile"]) is type(None):
-        #                             self.grid[y][x]["entropy"] = [
-        #                                 x
-        #                                 for x in self.grid[y][x]["entropy"]
-        #                                 if x not in removals
-        #                             ]
-        #                             if len(self.grid[y][x]["entropy"]) == 0:
-        #                                 return False
-        #
-        #                     else:
-        #                         # print(f"({x}, {y}) is North-West of ({x_index}, {y_index})")
-        #                         # remove all illegal Northern neighbours of entropies in grid[y + 1][x] from grid[y][x]
-        #                         north_illegals = [
-        #                             self.tile_set.tiles[entropy].north_illegals
-        #                             for entropy in self.grid[y + 1][x]["entropy"]
-        #                         ]
-        #
-        #                         # if an entry is in ALL north illegals for all entropy values, then it's a valid removal.  If it's missing from even one, we keep it as a possible.
-        #                         north_removals = set.intersection(*[set(x) for x in north_illegals]) if len(north_illegals) > 0 else set()
-        #
-        #                         # remove all illegal Western neighbours of entropies in grid[y][x + 1] from grid[y][x]
-        #                         west_illegals = [
-        #                             self.tile_set.tiles[entropy].west_illegals
-        #                             for entropy in self.grid[y][x + 1]["entropy"]
-        #                         ]
-        #
-        #                         # if an entry is in ALL north illegals for all entropy values, then it's a valid removal.  If it's missing from even one, we keep it as a possible.
-        #                         west_removals = set.intersection(*[set(x) for x in west_illegals]) if len(west_illegals) > 0 else set()
-        #
-        #                         # if an entry is in either the north removal list OR the west removal list, we remove it
-        #                         removals = set.union(set(north_removals), set(west_removals))
-        #
-        #                         if type(self.grid[y][x]["tile"]) is type(None):
-        #                             self.grid[y][x]["entropy"] = [
-        #                                 x
-        #                                 for x in self.grid[y][x]["entropy"]
-        #                                 if x not in removals
-        #                             ]
-        #                             if len(self.grid[y][x]["entropy"]) == 0:
-        #                                 return False
-        # return True
 
     def get_lowest_entropy_cell(self):
-        # lowest = []
-        # for y in range(self.height_in_cells):
-        #     for x in range(self.width_in_cells):
-        #         if type(self.grid[y][x]['tile']) is not type(None):
-        #             continue
-        #
-        #         if len(lowest) == 0 or len(self.grid[y][x]['entropy']) < len(self.grid[lowest[0][0]][lowest[0][1]]['entropy']):
-        #             lowest = [(y, x)]
-        #         elif len(self.grid[y][x]["entropy"]) == len(
-        #             self.grid[lowest[0][0]][lowest[0][1]]["entropy"]
-        #         ):
-        #             lowest.append((y, x))
-        #
-        # if len(lowest) == 0:
-        #     # print("Finished!")
-        #     return None, None
-        # elif len(lowest) == 1:
-        #     return lowest[0]
-        # else:
-        #     return choice(lowest)
 
         # Get all uncollapsed cells
         uncollapsed = np.where(self.tiles == -1)
@@ -485,7 +203,7 @@ class Grid:
 
         return y, x
 
-    def draw(self, surface, debugging=False):
+    def draw(self, surface):
         for y in range(self.height_in_cells):
             for x in range(self.width_in_cells):
                 pygame.draw.rect(
@@ -504,19 +222,4 @@ class Grid:
                         surface,
                         x * self.draw_size[1],
                         y * self.draw_size[0],
-                        self.scaling,
                     )
-                else:
-                    if debugging:
-                        # note that these are hard-coded values for debugging the tileset "Circuit" containing 14 tiles on a 1400x1050 screen with 4 horizontal cells and 3 vertical cells
-                        possibilities = np.where(self.entropy[y, x])[0]
-                        for i, candidate in enumerate(possibilities):
-                            c_x = i % 4
-                            c_y = i // 4
-                            if i < 16:  # Limit to 16 options shown
-                                self.tile_set.tiles[candidate].draw(
-                                    surface,
-                                    x * self.draw_size[1] + c_x * self.cell_size // 4 + 9,
-                                    y * self.draw_size[0] + c_y * self.cell_size // 4 + 9,
-                                    5,  # small scale for debugging
-                                )

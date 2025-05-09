@@ -6,9 +6,9 @@ from tile_set import TileSet
 
 
 def main():
-    window_size = (1920, 1280)
-    default_tile_scaling = 1
-    tile_set = TileSet(r'tilesets\castle', colour_tolerance=10, match_ratio=0.7, max_mismatch_run=2)
+    window_size = (1000, 800)
+    default_tile_scaling = 2
+    tile_set = TileSet(r'tilesets\knots', colour_tolerance=10, match_ratio=0.9, max_mismatch_run=1)
     horizonal_cells = window_size[0] // (default_tile_scaling * tile_set.tile_size[1])
     vertical_cells = window_size[1] // (default_tile_scaling * tile_set.tile_size[0])
     grid = Grid(window_size, tile_set, horizonal_cells, vertical_cells, scaling=default_tile_scaling)
@@ -29,7 +29,6 @@ def main():
 
     clock = pygame.time.Clock()
     running = True
-    debugging = False
     collapsing = True
     while running:
         for event in pygame.event.get():
@@ -39,10 +38,8 @@ def main():
             if event.type == pygame.KEYUP:
                 if event.key == pygame.K_ESCAPE:
                     running = False
-                if event.key == pygame.K_d:
-                    debugging = not debugging
 
-        grid.draw(screen, debugging)
+        grid.draw(screen)
         scaled_screen = pygame.transform.scale(screen, window_size)
 
         if collapsing:
