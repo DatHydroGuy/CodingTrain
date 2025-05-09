@@ -39,6 +39,12 @@ class Plinko:
 
         self._draw_options = pymunk.pygame_util.DrawOptions(self.screen)
 
+        # # This is how you can turn off the collision points.
+        # self._draw_options.flags ^= self._draw_options.DRAW_COLLISION_POINTS
+
+        # # Stops drawing the constraints.
+        # self._draw_options.flags ^= self._draw_options.DRAW_CONSTRAINTS
+
         # Balls that exist in the world
         self.balls = []
 

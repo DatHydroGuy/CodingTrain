@@ -7,7 +7,7 @@ import pygame
 import pyfastnoisesimd as fns
 # from pygame import pixelcopy
 
-from simplex_noise_flow_field.particle import Particle
+from particle import Particle
 
 
 class PyFastNoise2d:

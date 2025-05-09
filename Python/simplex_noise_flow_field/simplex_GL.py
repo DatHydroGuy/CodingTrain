@@ -54,23 +54,17 @@ def create_object(shader):
     return vertex_array_object
 
 
-def display(shader, vertex_array_object):
+def display(shader, vertex_array_object, time):
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
     glUseProgram(shader)
 
-    # c_real_loc = glGetUniformLocation(shader, "c_real")
-    # glUniform1f(c_real_loc, -0.70176)
-    #
-    # c_imag_loc = glGetUniformLocation(shader, "c_imag")
-    # glUniform1f(c_imag_loc, -0.3842)
-    #
-    # offset_loc = glGetUniformLocation(shader, "col_offset")
-    # glUniform1i(offset_loc, offset)
-    #
     screen_width_loc = glGetUniformLocation(shader, "screen_width")
     glUniform1f(screen_width_loc, SCREEN_WIDTH)
     screen_height_loc = glGetUniformLocation(shader, "screen_height")
     glUniform1f(screen_height_loc, SCREEN_HEIGHT)
+    time_loc = glGetUniformLocation(shader, "time")
+    glUniform1f(time_loc, time)
+
     # colour_map_loc = glGetUniformLocation(shader, "colour_map")
     # glUniform3fv(colour_map_loc, int(len(data_for_gpu) / 3), data_for_gpu)
 
@@ -103,6 +97,7 @@ def main():
                              "vertex": []})
 
     vertex_array_object = create_object(shader)
+    time = 0.0
 
     clock = pygame.time.Clock()
 
@@ -125,9 +120,11 @@ def main():
                 if event.key == pygame.K_ESCAPE:
                     return
 
-        display(shader, vertex_array_object)
+        display(shader, vertex_array_object, time)
 
         # draw_text(10, SCREEN_HEIGHT - 20, "Press space to turn colour cycling on / off")
+
+        time += 0.01
 
         pygame.display.set_caption("FPS: %.2f" % clock.get_fps())
         pygame.display.flip()
