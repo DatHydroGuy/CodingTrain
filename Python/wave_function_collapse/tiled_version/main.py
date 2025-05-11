@@ -8,7 +8,7 @@ from tile_set import TileSet
 def main():
     window_size = (1000, 800)
     default_tile_scaling = 2
-    tile_set = TileSet(r'tilesets\knots', colour_tolerance=10, match_ratio=0.9, max_mismatch_run=1)
+    tile_set = TileSet(r'..\tilesets\knots', colour_tolerance=10, match_ratio=0.9, max_mismatch_run=1)
     horizonal_cells = window_size[0] // (default_tile_scaling * tile_set.tile_size[1])
     vertical_cells = window_size[1] // (default_tile_scaling * tile_set.tile_size[0])
     grid = Grid(window_size, tile_set, horizonal_cells, vertical_cells, scaling=default_tile_scaling, wrap=True)
