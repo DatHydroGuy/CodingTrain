@@ -4,12 +4,12 @@ from tile import Tile
 
 
 class TileSet:
-    def __init__(self, source_file=None, tile_size=3, colour_tolerance=0, match_ratio=1.0, max_mismatch_run=1):
+    def __init__(self, source_file=None, tile_size=3):
         self.tiles = []
         self.tile_size = (None, None)
         if source_file is not None:
             self.read_tile_set(source_file, tile_size)
-            self.get_illegal_neighbours(colour_tolerance, match_ratio, max_mismatch_run)
+            self.get_illegal_neighbours()
 
     def __len__(self):
         return len(self.tiles)
@@ -20,22 +20,22 @@ class TileSet:
     # def tile_size(self):
     #     return self.tiles[0].pixels.shape[:2]
 
-    def get_illegal_neighbours(self, colour_tolerance, match_ratio, max_mismatch_run):
+    def get_illegal_neighbours(self):
         for this_tile in self.tiles:
             for other_tile in self.tiles:
-                valid_neighbour = Tile.compare_north_edge(this_tile, other_tile, colour_tolerance, match_ratio, max_mismatch_run)
+                valid_neighbour = Tile.compare_edges(this_tile.north_pixels, other_tile.south_pixels)
                 if not valid_neighbour:
                     this_tile.north_illegals.append(other_tile.id)
 
-                valid_neighbour = Tile.compare_edges(this_tile.south_pixels, other_tile.north_pixels, colour_tolerance, match_ratio, max_mismatch_run)
+                valid_neighbour = Tile.compare_edges(this_tile.south_pixels, other_tile.north_pixels)
                 if not valid_neighbour:
                     this_tile.south_illegals.append(other_tile.id)
 
-                valid_neighbour = Tile.compare_edges(this_tile.east_pixels, other_tile.west_pixels, colour_tolerance, match_ratio, max_mismatch_run)
+                valid_neighbour = Tile.compare_edges(this_tile.east_pixels, other_tile.west_pixels)
                 if not valid_neighbour:
                     this_tile.east_illegals.append(other_tile.id)
 
-                valid_neighbour = Tile.compare_edges(this_tile.west_pixels, other_tile.east_pixels, colour_tolerance, match_ratio, max_mismatch_run)
+                valid_neighbour = Tile.compare_edges(this_tile.west_pixels, other_tile.east_pixels)
                 if not valid_neighbour:
                     this_tile.west_illegals.append(other_tile.id)
 

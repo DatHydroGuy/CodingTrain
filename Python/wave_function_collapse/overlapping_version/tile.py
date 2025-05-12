@@ -23,16 +23,16 @@ class Tile:
         self.set_east_edge_pixels()
 
     def set_north_edge_pixels(self):
-        self.north_pixels = self.pixels[0, :]
+        self.north_pixels = self.pixels[:2, :]
 
     def set_east_edge_pixels(self):
-        self.east_pixels = self.pixels[:, -1]
+        self.east_pixels = self.pixels[:, -2:]
 
     def set_south_edge_pixels(self):
-        self.south_pixels = self.pixels[-1, :]
+        self.south_pixels = self.pixels[-2:, :]
 
     def set_west_edge_pixels(self):
-        self.west_pixels = self.pixels[:, 0]
+        self.west_pixels = self.pixels[:, :2]
 
     def draw(self, surface, top_left_x, top_left_y):
         # Transpose pixel array from (H, W, C) to (W, H, C)
@@ -51,19 +51,25 @@ class Tile:
     # Circuit:     def compare_edges(edge_a, edge_b, colour_tolerance=10, match_ratio=0.7, max_mismatch_run=1):
     @staticmethod
     def compare_edges(edge_a, edge_b, colour_tolerance=20, match_ratio=0.5, max_mismatch_run=1):
+        matched = np.zeros(edge_a.shape, dtype=np.uint32)
+
         # Absolute difference per channel
         diff = np.abs(edge_a.astype(int) - edge_b.astype(int))
 
-        # A pixel matches if all RGB channels are within tolerance
-        pixel_matches = np.all(diff <= colour_tolerance, axis=1)
+        differences = np.equal(matched, diff)
 
-        # Count how many pixels matched
-        match_fraction = np.count_nonzero(pixel_matches) / len(edge_a)
-
-        # Limit number of consecutive mismatched pixels
-        max_run = Tile.max_consecutive_false(pixel_matches)
-
-        return match_fraction >= match_ratio and max_run <= max_mismatch_run
+        return np.all(differences)
+        #
+        # # A pixel matches if all RGB channels are within tolerance
+        # pixel_matches = np.all(diff <= colour_tolerance, axis=1)
+        #
+        # # Count how many pixels matched
+        # match_fraction = np.count_nonzero(pixel_matches) / len(edge_a)
+        #
+        # # Limit number of consecutive mismatched pixels
+        # # max_run = Tile.max_consecutive_false(pixel_matches)
+        #
+        # return match_fraction >= match_ratio #  and max_run <= max_mismatch_run
 
     @staticmethod
     def max_consecutive_false(mask):
