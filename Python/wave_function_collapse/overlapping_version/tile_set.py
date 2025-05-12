@@ -6,7 +6,7 @@ from tile import Tile
 class TileSet:
     def __init__(self, source_file=None, tile_size=3):
         self.tiles = []
-        self.tile_size = (None, None)
+        self.tile_size = (tile_size, tile_size)
         if source_file is not None:
             self.read_tile_set(source_file, tile_size)
             self.get_illegal_neighbours()

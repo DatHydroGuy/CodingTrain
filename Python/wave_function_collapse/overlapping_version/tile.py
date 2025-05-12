@@ -48,7 +48,6 @@ class Tile:
         scaled = pygame.transform.scale(temp_surface, (blit_array.shape[0], blit_array.shape[1]))
         surface.blit(scaled, (top_left_x, top_left_y))
 
-    # Circuit:     def compare_edges(edge_a, edge_b, colour_tolerance=10, match_ratio=0.7, max_mismatch_run=1):
     @staticmethod
     def compare_edges(edge_a, edge_b, colour_tolerance=20, match_ratio=0.5, max_mismatch_run=1):
         matched = np.zeros(edge_a.shape, dtype=np.uint32)
@@ -59,17 +58,6 @@ class Tile:
         differences = np.equal(matched, diff)
 
         return np.all(differences)
-        #
-        # # A pixel matches if all RGB channels are within tolerance
-        # pixel_matches = np.all(diff <= colour_tolerance, axis=1)
-        #
-        # # Count how many pixels matched
-        # match_fraction = np.count_nonzero(pixel_matches) / len(edge_a)
-        #
-        # # Limit number of consecutive mismatched pixels
-        # # max_run = Tile.max_consecutive_false(pixel_matches)
-        #
-        # return match_fraction >= match_ratio #  and max_run <= max_mismatch_run
 
     @staticmethod
     def max_consecutive_false(mask):
