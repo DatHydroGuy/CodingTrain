@@ -1,5 +1,5 @@
 import numpy as np
-from numba import jit, prange, types
+from numba import jit, njit, prange, types
 from numba.typed import Dict
 
 
@@ -178,32 +178,123 @@ class Frequencies:
 
 
 class EnablerCounts:
-    def __init__(self, grid_shape: tuple[int, int], num_tiles: int, adjacency_rules: np.ndarray):
+    # def __init__(self, grid_shape: tuple[int, int], num_tiles: int, adjacency_rules: np.ndarray):
+    #     self.height, self.width = grid_shape
+    #     self.num_tiles = num_tiles
+    #     self.adjacency_rules = adjacency_rules
+    #     self.enablers = np.zeros((self.height, self.width, 4, num_tiles), dtype=np.int32)
+    #     self._initialise_enablers()
+    #
+    # def _initialise_enablers(self):
+    #     """Initialise enabler counts assuming all tiles are possible everywhere."""
+    #     for y in range(self.height):
+    #         for x in range(self.width):
+    #             for direction in range(4):
+    #                 for t in range(self.num_tiles):
+    #                     # Count how many tiles can support tile t from this direction
+    #                     allowed = self.adjacency_rules[t, direction]
+    #                     self.enablers[y, x, direction, t] = np.count_nonzero(allowed)
+    #
+    # def get_enabler_count(self, y: int, x: int, direction: int, tile_index: int) -> int:
+    #     return self.enablers[y, x, direction, tile_index]
+    #
+    # def decrement(self, y: int, x: int, direction: int, tile_index: int):
+    #     self.enablers[y, x, direction, tile_index] -= 1
+    #
+    # def is_enabled(self, y: int, x: int, tile_index: int) -> bool:
+    #     """Check if tile is still enabled in all directions."""
+    #     return np.all(self.enablers[y, x, :, tile_index] > 0)
+    #
+    # def disable_tile(self, y: int, x: int, tile_index: int):
+    #     self.enablers[y, x, :, tile_index] = 0
+    def __init__(
+        self, grid_shape: tuple[int, int], num_tiles: int, adjacency_rules: np.ndarray
+    ):
         self.height, self.width = grid_shape
         self.num_tiles = num_tiles
         self.adjacency_rules = adjacency_rules
-        self.enablers = np.zeros((self.height, self.width, 4, num_tiles), dtype=np.int32)
-        self._initialise_enablers()
 
-    def _initialise_enablers(self):
-        """Initialise enabler counts assuming all tiles are possible everywhere."""
-        for y in range(self.height):
-            for x in range(self.width):
-                for direction in range(4):
-                    for t in range(self.num_tiles):
-                        # Count how many tiles can support tile t from this direction
-                        allowed = self.adjacency_rules[t, direction]
-                        self.enablers[y, x, direction, t] = np.count_nonzero(allowed)
+        # Use the vectorised Numba initialisation
+        self.enablers = _vectorised_initialise_enablers(
+            adjacency_rules, self.height, self.width, num_tiles
+        )
 
     def get_enabler_count(self, y: int, x: int, direction: int, tile_index: int) -> int:
-        return self.enablers[y, x, direction, tile_index]
+        return _get_enabler_count_numba(self.enablers, y, x, direction, tile_index)
 
     def decrement(self, y: int, x: int, direction: int, tile_index: int):
-        self.enablers[y, x, direction, tile_index] -= 1
+        _decrement_numba(self.enablers, y, x, direction, tile_index)
 
     def is_enabled(self, y: int, x: int, tile_index: int) -> bool:
         """Check if tile is still enabled in all directions."""
-        return np.all(self.enablers[y, x, :, tile_index] > 0)
+        return _is_enabled_numba(self.enablers, y, x, tile_index)
 
     def disable_tile(self, y: int, x: int, tile_index: int):
-        self.enablers[y, x, :, tile_index] = 0
+        _disable_tile_numba(self.enablers, y, x, tile_index)
+
+
+@njit
+def _initialise_enablers_numba(enablers, adjacency_rules, height, width, num_tiles):
+    """Numba-compiled initialisation of enabler counts."""
+    for y in range(height):
+        for x in range(width):
+            for direction in range(4):
+                for t in range(num_tiles):
+                    # Count how many tiles can support tile t from this direction
+                    count = 0
+                    for i in range(adjacency_rules.shape[1]):
+                        if adjacency_rules[t, direction, i] != 0:
+                            count += 1
+                    enablers[y, x, direction, t] = count
+
+
+@njit
+def _vectorised_initialise_enablers(adjacency_rules, height, width, num_tiles):
+    """Vectorised initialisation using Numba for better performance."""
+    enablers = np.zeros((height, width, 4, num_tiles), dtype=np.int32)
+
+    # Pre-compute counts for each tile and direction
+    tile_direction_counts = np.zeros((num_tiles, 4), dtype=np.int32)
+    for t in range(num_tiles):
+        for direction in range(4):
+            count = 0
+            for i in range(adjacency_rules.shape[2]):
+                if adjacency_rules[t, direction, i] != 0:
+                    count += 1
+            tile_direction_counts[t, direction] = count
+
+    # Broadcast to all positions
+    for y in range(height):
+        for x in range(width):
+            for direction in range(4):
+                for t in range(num_tiles):
+                    enablers[y, x, direction, t] = tile_direction_counts[t, direction]
+
+    return enablers
+
+
+@njit
+def _get_enabler_count_numba(enablers, y, x, direction, tile_index):
+    """Numba-compiled getter for enabler count."""
+    return enablers[y, x, direction, tile_index]
+
+
+@njit
+def _decrement_numba(enablers, y, x, direction, tile_index):
+    """Numba-compiled decrement operation."""
+    enablers[y, x, direction, tile_index] -= 1
+
+
+@njit
+def _is_enabled_numba(enablers, y, x, tile_index):
+    """Numba-compiled check if tile is enabled in all directions."""
+    for direction in range(4):
+        if enablers[y, x, direction, tile_index] <= 0:
+            return False
+    return True
+
+@njit
+def _disable_tile_numba(enablers, y, x, tile_index):
+    """Numba-compiled tile disabling."""
+    for direction in range(4):
+        enablers[y, x, direction, tile_index] = 0

@@ -3,13 +3,15 @@ from random import random
 import numpy as np
 import pygame
 
+from helpers import EnablerCounts
+
 
 class Cell:
-    def __init__(self, x_pos: int, y_pos: int, width: int, height: int, adjacency_rules: np.ndarray, frequency_rules: np.ndarray) -> None:
+    def __init__(self, x_pos: int, y_pos: int, grid_size: tuple[int, int], cell_size: int, adjacency_rules: np.ndarray, frequency_rules: np.ndarray) -> None:
         self.x_pos = x_pos
         self.y_pos = y_pos
-        self.width = width
-        self.height = height
+        self.width = cell_size
+        self.height = cell_size
         self.adjacency_rules = adjacency_rules
         self.frequency_rules = frequency_rules
         self.possible = np.full(len(frequency_rules), True, dtype=np.bool_)
@@ -18,6 +20,7 @@ class Cell:
         self.tile = None
         self.entropy_noise = random() * 0.00001
         self.is_collapsed = False
+        self.tile_enabler_counts = EnablerCounts(grid_size, len(frequency_rules), self.adjacency_rules)
 
     def set_tile(self, tile: np.ndarray) -> None:
         self.tile = tile
