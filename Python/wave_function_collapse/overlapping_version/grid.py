@@ -1,111 +1,161 @@
-import heapq
-from collections import deque
-from random import randint
-
+import copy
+from random import choice
+import pygame
 import numpy as np
-
+from collections import deque
 from cell import Cell
 from tile_set import TileSet
 
 
 class Grid:
-    def __init__(self, screen_size: tuple[int, int], size_in_cells: tuple[int, int], tile_set: TileSet, scaling: int=1, wrap: bool=False) -> None:
+    def __init__(self, screen_size: tuple[int, int], grid_resolution: tuple[int, int], tile_set: TileSet, scaling: int=1, wrap: bool=False):
         self.screen_size = screen_size
         self.tile_set = tile_set
-        self.size_in_cells = size_in_cells
-        self.cell_size = min(self.screen_size[0] // self.size_in_cells[0], self.screen_size[1] // self.size_in_cells[1])
-        self.num_cells = len(self.tile_set.tiles)
-        self.num_uncollapsed_cells = len(self.tile_set.tiles)
+        self.width_in_cells = grid_resolution[0]
+        self.height_in_cells = grid_resolution[1]
+        self.cell_size = min(self.screen_size[0] // self.width_in_cells, self.screen_size[1] // self.height_in_cells)
+        self.num_tiles = len(self.tile_set.tiles)
         self.scaling = scaling
+        self.draw_size = (self.tile_set.kernel_size, self.tile_set.kernel_size)
         self.wrap = wrap
-        self.entropy_heap = []            # entries in here need to be of the form (entropy, y-coord, x-coord)
-        heapq.heapify(self.entropy_heap)
-        self.tile_removals = deque()      # entries in here need to be of the form (tile_index, y-coord, x-coord)
-        self.cells = [[Cell(x, y, self.size_in_cells, self.cell_size, self.tile_set.adjacencies, self.tile_set.frequencies) for x in range(self.size_in_cells[0])] for y in range(self.size_in_cells[1])]
+        self.cells = np.array([[Cell(x * self.cell_size, y * self.cell_size, self.cell_size, self.num_tiles) for x in range(self.width_in_cells)] for y in range(self.height_in_cells)])
+        self.neighbours = [(-1, 0), (1, 0), (0, -1), (0, 1)]  # N, S, W, E
+        # Cache for backtracking - maybe a queue would be more efficient?
+        self.grid_copy = []
 
-    def choose_next_cell(self) -> tuple[int, int]:
-        while len(self.entropy_heap) > 0:
-            entropy_coord = heapq.heappop(self.entropy_heap)
-            cell = self.cells[entropy_coord[2]][entropy_coord[1]]
-            if not cell.is_collapsed:
-                return entropy_coord
+    def step(self):
+        next_cell = self.get_lowest_entropy_cell()
 
-        raise IndexError("Entropy_heap is empty but there are still uncollapsed cells")
+        if next_cell is None or next_cell.is_collapsed:     # should never be collapsed, just being defensive
+            return
 
-    def collapse_cell_at(self, cell_coord: tuple[int, int]) -> None:
-        cell = self.cells[cell_coord[0]][cell_coord[1]]
-        tile_index = cell.choose_tile_index()
-        cell.is_collapsed = True
-        cell.possible[:] = False
-        cell.possible[tile_index] = True
-        # self.tile_removals.extend(np.flatnonzero(~cell.possible))   # add indices of all False values to deque
-        self.tile_removals.append((tile_index, cell_coord))
+        # choose a tile to collapse to
+        next_cell_tile = choice(np.nonzero(next_cell.possible)[0])
 
-    def propagate(self) -> None:
-        directions = [(-1, 0), (1, 0), (0, -1), (0, 1)]  # N, S, W, E
-        opposites = [(1, 0), (-1, 0), (0, 1), (0, -1)]  # S, N, E, W
-        last_enabler = np.array([1, 1, 1, 1])
+        # collapse the cell
+        success = self.collapse_cell(next_cell, next_cell_tile)
 
-        while self.tile_removals:
-            # at some point in the recent past, removal_update.tile_index was removed as a candidate for the tile in
-            # the cell at removal_update.coord
-            removal_update = self.tile_removals.popleft()
+        while not success:
+            # Need to backtrack the last step on the stack
+            if len(self.grid_copy) == 0:
+                print("No more states to backtrack to. Puzzle failed.")
+                break
 
-            for dir_index, direction in enumerate(directions):
-                # propagate the effect to the neighbour in each direction
-                neighbour_coord = (removal_update[1][0] + direction[0], removal_update[1][1] + direction[1])
-                if neighbour_coord[0] < 0 or neighbour_coord[0] >= self.size_in_cells[0] or neighbour_coord[1] < 0 or neighbour_coord[1] >= self.size_in_cells[1]:
+            # restore grid to pre-collapsed state
+            old_cells, old_cell, old_cell_tile = self.grid_copy.pop()
+
+            old_possible = np.nonzero(old_cell.possible)[0]
+            choices = old_possible[old_possible != old_cell_tile]
+
+            if len(choices) == 0:
+                print(
+                    f"Backtracked using snapshots. Snapshot stack length = {len(self.grid_copy)}"
+                )
+                success = False
+                continue
+
+            # restore last good grid
+            self.cells = old_cells.copy()
+
+            # choose a new tile to collapse to
+            new_choice = choice(choices)
+
+            # try it out
+            success = self.collapse_cell(old_cell, new_choice)
+
+    def collapse_cell(self, next_cell, next_cell_tile):
+        # Save state in case we need to backtrack
+        self.grid_copy.append(
+            [copy.deepcopy(self.cells), next_cell.copy(), next_cell_tile]
+        )
+
+        next_cell.tile = self.tile_set.tiles[next_cell_tile]
+        next_cell.possible[:] = False
+        next_cell.possible[next_cell_tile] = True
+        next_cell.is_collapsed = True
+        return self.propagate(next_cell.x_pos // next_cell.width, next_cell.y_pos // next_cell.height, next_cell_tile)
+
+    def propagate(self, x_index: int, y_index: int, tile_id: int) -> bool:
+        # Queue of cells to process (y, x)
+        cell_tuple = [(y_index, x_index)]
+        queue = deque(cell_tuple)
+
+        # Track processed cells to avoid duplicates
+        processed = set()
+
+        while queue:
+            current_y, current_x = queue.popleft()
+
+            if (current_y, current_x) in processed:
+                continue
+
+            processed.add((current_y, current_x))
+
+            # Remember: adjacencies are in the order North, South, West, East
+            for idx, direction in enumerate(self.neighbours):
+                ny = current_y + direction[0]
+                nx = current_x + direction[1]
+
+                if ny < 0 or ny >= self.height_in_cells or nx < 0 or nx >= self.width_in_cells:
                     continue
 
-                neighbour_cell = self.cells[neighbour_coord[0]][neighbour_coord[1]]
+                if self.cells[ny, nx].is_collapsed:
+                    continue
 
-                compatible_tiles = np.nonzero(
-                    self.tile_set.adjacencies[removal_update[0], dir_index]
+                # Always get all possibilities for the source cell
+                current_possible_tiles = np.nonzero(
+                    self.cells[current_y, current_x].possible
                 )[0]
 
-                # iterate over all the tiles which may appear in the cell one space in `direction` from a
-                # cell containing removal_update.tile_index
-                for compatible_tile in compatible_tiles:
-                    # check if we're about to decrement any enablers to zero
-                    enabler_counts = neighbour_cell.tile_enabler_counts.enablers[
-                                neighbour_coord[0],
-                                neighbour_coord[1],
-                                :,
-                                compatible_tile,
-                            ]
+                valid_tiles = np.zeros(self.num_tiles, dtype=bool)
+                for t_id in current_possible_tiles:
+                    valid_tiles |= self.tile_set.adjacencies[t_id][idx]
 
-                    if enabler_counts[dir_index] == 1:
-                        # if there is a zero count in another direction, the potential tile has already been removed,
-                        # and we want to avoid removing it again
-                        if not np.any(np.equal(enabler_counts, np.zeros_like(enabler_counts))):
-                            # remove the possibility
-                            neighbour_cell.remove_tile(compatible_tile)
+                # Remove illegal neighbour options
+                remaining_copy = np.copy(self.cells[ny, nx].possible)
+                self.cells[ny, nx].possible &= valid_tiles
+                remaining = np.nonzero(self.cells[ny, nx].possible)[0]
 
-                            # check for contradictions
-                            if len(neighbour_cell.possible[neighbour_cell.possible]) == 0:
-                                # contradiction
-                                raise LookupError(f"No possible tiles exist for cell ({removal_update[0]},{removal_update[1]})")
+                if np.all(np.equal(self.cells[ny, nx].possible, remaining_copy)):
+                    # No changes made to neighbour, so move on to next cell
+                    continue
 
-                            # this probably changed the cell's entropy
-                            heapq.heappush(self.entropy_heap, (neighbour_cell.entropy(), neighbour_coord))
+                if len(remaining) == 0:
+                    # contradiction - need to backtrack, so return a failure
+                    return False
 
-                            # add the update to the stack
-                            self.tile_removals.append((compatible_tile, neighbour_coord))
+                elif len(remaining) == 1:
+                    # only 1 possibility, so collapse the cell without snapshotting
+                    self.cells[ny, nx].tile = self.tile_set.tiles[remaining[0]]
+                    self.cells[ny, nx].possible[:] = False
+                    self.cells[ny, nx].possible[remaining[0]] = True
+                    self.cells[ny, nx].is_collapsed = True
+                    queue.append((ny, nx))
 
-                    neighbour_cell.tile_enabler_counts.enablers[
-                        neighbour_coord[0],
-                        neighbour_coord[1],
-                        dir_index,
-                        compatible_tile,
-                    ] -= 1
+                else:
+                    # Add neighbour to queue
+                    if (ny, nx) not in processed:
+                        queue.append((ny, nx))
 
+        # if you get here, everything went well, so return a success
+        return True
 
-    def step(self) -> None:
-        if self.num_uncollapsed_cells > 0:
-            if self.num_uncollapsed_cells == self.num_cells:
-                next_cell = (randint(0, self.size_in_cells[0] - 1), randint(0, self.size_in_cells[1] - 1))
-            else:
-                next_cell = self.choose_next_cell()
-            self.collapse_cell_at(next_cell)
-            self.propagate()
-            self.num_uncollapsed_cells -= 1
+    def get_lowest_entropy_cell(self) -> Cell | None:
+        u_cells = self.get_uncollapsed_cells()
+        if len(u_cells) == 0:
+            return None     # we're done
+
+        lowest_entropy_cell = sorted(u_cells, key=lambda obj: obj.possible.sum())[0]
+        lowest_entropy_value = len(np.nonzero(lowest_entropy_cell.possible)[0])
+        lowest_entropy_cells = u_cells[
+            np.nonzero(np.vectorize(lambda c: len(np.nonzero(c.possible)[0]) == lowest_entropy_value)(u_cells))
+        ]
+        return choice(lowest_entropy_cells)
+
+    def get_uncollapsed_cells(self):
+        return self.cells[np.nonzero(np.vectorize(lambda c: c.is_collapsed is False)(self.cells))]
+
+    def draw(self, surface: pygame.Surface) -> None:
+        for row in self.cells:
+            for cell in row:
+                cell.draw(surface)

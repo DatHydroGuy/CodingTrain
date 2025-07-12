@@ -1,26 +1,79 @@
-from random import random
-
 import numpy as np
 import pygame
 
-from helpers import EnablerCounts
-
 
 class Cell:
-    def __init__(self, x_pos: int, y_pos: int, grid_size: tuple[int, int], cell_size: int, adjacency_rules: np.ndarray, frequency_rules: np.ndarray) -> None:
+    def __init__(
+        self, x_pos: int, y_pos: int, cell_size: int, total_number_of_tiles: int
+    ) -> None:
         self.x_pos = x_pos
         self.y_pos = y_pos
         self.width = cell_size
         self.height = cell_size
-        self.adjacency_rules = adjacency_rules
-        self.frequency_rules = frequency_rules
-        self.possible = np.full(len(frequency_rules), True, dtype=np.bool_)
-        self.weight_sum = self.total_possible_tile_frequency()
-        self.weight_sum_log = np.sum(frequency_rules * np.log2(frequency_rules))
+        self.possible = np.full(total_number_of_tiles, True, dtype=np.bool_)
         self.tile = None
-        self.entropy_noise = random() * 0.00001
         self.is_collapsed = False
-        self.tile_enabler_counts = EnablerCounts(grid_size, len(frequency_rules), self.adjacency_rules)
+        self.recursion_checked = False
+
+    def copy(self):
+        """Create a fast copy of this cell"""
+        # Create new cell with same position and size
+        new_cell = Cell.__new__(Cell)  # Create instance without calling __init__
+
+        # Copy all attributes efficiently
+        new_cell.x_pos = self.x_pos
+        new_cell.y_pos = self.y_pos
+        new_cell.width = self.width
+        new_cell.height = self.height
+        new_cell.is_collapsed = self.is_collapsed
+        new_cell.recursion_checked = self.recursion_checked
+
+        # Copy numpy array efficiently
+        new_cell.possible = self.possible.copy()
+
+        # Handle tile reference (shallow copy is usually sufficient for tiles)
+        new_cell.tile = self.tile  # Shallow copy - tiles are typically immutable
+
+        return new_cell
+
+    def deep_copy(self):
+        """Create a deep copy of this cell (slower but safer)"""
+        # Create new cell with same position and size
+        new_cell = Cell.__new__(Cell)  # Create instance without calling __init__
+
+        # Copy all attributes
+        new_cell.x_pos = self.x_pos
+        new_cell.y_pos = self.y_pos
+        new_cell.width = self.width
+        new_cell.height = self.height
+        new_cell.is_collapsed = self.is_collapsed
+        new_cell.recursion_checked = self.recursion_checked
+
+        # Deep copy numpy arrays
+        new_cell.possible = self.possible.copy()
+
+        # Deep copy tile if it exists
+        if self.tile is not None:
+            new_cell.tile = self.tile.copy()
+        else:
+            new_cell.tile = None
+
+        return new_cell
+
+    def copy_state_from(self, other_cell):
+        """Copy state from another cell (in-place, very fast)"""
+        if not isinstance(other_cell, Cell):
+            raise TypeError("Can only copy from another Cell object")
+
+        # Copy state attributes (position stays the same)
+        self.is_collapsed = other_cell.is_collapsed
+        self.recursion_checked = other_cell.recursion_checked
+
+        # Copy numpy array efficiently
+        np.copyto(self.possible, other_cell.possible)
+
+        # Copy tile reference
+        self.tile = other_cell.tile
 
     def set_tile(self, tile: np.ndarray) -> None:
         self.tile = tile
@@ -28,46 +81,27 @@ class Cell:
     def get_tile(self) -> np.ndarray:
         return self.tile
 
-    # def get_tile_average(self) -> list[int]:
-    #     return np.average(self.tile, axis=(0, 1)).astype(int)
+    def draw(self, screen: pygame.Surface):
+        colour = (120, 120, 120)
+        if self.tile is None:
+            pygame.draw.rect(
+                screen, colour, (self.x_pos, self.y_pos, self.width, self.height), 1
+            )
+        else:
+            blit_array = np.transpose(self.tile, (1, 0, 2))
+            # Top-left pixel of 3x3 tile
+            pygame.draw.rect(
+                screen,
+                blit_array[0, 0],
+                (self.x_pos, self.y_pos, self.width, self.height),
+            )
 
-    def remove_tile(self, tile_index: int) -> None:
-        self.possible[tile_index] = False
-        freq = self.frequency_rules[tile_index]
-        self.weight_sum -= freq
-        self.weight_sum_log -= float(freq) * np.log2(float(freq))
+    def reset(self):
+        """Reset cell to initial uncollapsed state"""
+        self.possible.fill(True)
+        self.tile = None
+        self.is_collapsed = False
+        self.recursion_checked = False
 
-    def total_possible_tile_frequency(self) -> int:
-        return np.sum(self.frequency_rules[self.possible])
-
-    def choose_tile_index(self) -> np.ndarray:
-        weights = self.frequency_rules[self.possible]
-        total_weight = weights.sum()
-
-        # pick random position in the list of possible tile indices
-        remaining = random() * total_weight
-        cumulative_weights = np.cumsum(weights)
-
-        index = np.searchsorted(cumulative_weights, remaining, side="right")
-        possible_indices = np.flatnonzero(self.possible)
-
-        return possible_indices[index]
-
-    # def relative_frequency(self, tile_index: int) -> np.ndarray:
-    #     return self.frequency_rules[tile_index]
-
-    def entropy(self) -> float:
-        return np.log2(float(self.weight_sum)) - self.weight_sum_log / float(self.weight_sum)
-        # total_weight = np.sum(self.frequency_rules[self.possible])
-        # relative_frequencies = self.frequency_rules[self.possible].astype(float)
-        # sum_weight_log_weight = np.sum(relative_frequencies * np.log2(relative_frequencies))
-        #
-        # return np.log2(total_weight) - (sum_weight_log_weight / total_weight)
-
-    def draw(self, surface: pygame.Surface):
-        colour = (0, 0, 0)
-
-        if self.tile is not None:
-            colour = self.tile[0, 0]
-
-        pygame.draw.rect(surface, colour, (self.x_pos, self.y_pos, self.width, self.height))
+    def __repr__(self):
+        return f"Cell(pos=({self.x_pos}, {self.y_pos}), collapsed={self.is_collapsed}, possibilities={np.sum(self.possible)})"
