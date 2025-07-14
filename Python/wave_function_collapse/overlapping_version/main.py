@@ -5,9 +5,9 @@ from tile_set import TileSet
 
 def main():
     screen_size = (1600, 1200)
-    tile_set = TileSet(r'..\samples\mazelike.png', kernel_size=3)
-    grid_resolution = (80, 60)
-    grid = Grid(screen_size, grid_resolution, tile_set)
+    tile_set = TileSet(r'..\samples\city.png', kernel_size=3, include_rotated_kernels=False, include_flipped_kernels=False)
+    grid_resolution = (40, 30)
+    grid = Grid(screen_size, grid_resolution, tile_set, wrap=False)
 
     pygame.init()
     screen = pygame.display.set_mode(screen_size)
@@ -27,7 +27,8 @@ def main():
                 if event.key == pygame.K_ESCAPE:
                     running = False
 
-        grid.step()
+        if not grid.finished:
+            grid.step()
         grid.draw(screen)
 
         pygame.display.flip()

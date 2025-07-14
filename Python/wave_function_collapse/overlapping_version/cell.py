@@ -36,56 +36,17 @@ class Cell:
 
         return new_cell
 
-    def deep_copy(self):
-        """Create a deep copy of this cell (slower but safer)"""
-        # Create new cell with same position and size
-        new_cell = Cell.__new__(Cell)  # Create instance without calling __init__
-
-        # Copy all attributes
-        new_cell.x_pos = self.x_pos
-        new_cell.y_pos = self.y_pos
-        new_cell.width = self.width
-        new_cell.height = self.height
-        new_cell.is_collapsed = self.is_collapsed
-        new_cell.recursion_checked = self.recursion_checked
-
-        # Deep copy numpy arrays
-        new_cell.possible = self.possible.copy()
-
-        # Deep copy tile if it exists
-        if self.tile is not None:
-            new_cell.tile = self.tile.copy()
-        else:
-            new_cell.tile = None
-
-        return new_cell
-
-    def copy_state_from(self, other_cell):
-        """Copy state from another cell (in-place, very fast)"""
-        if not isinstance(other_cell, Cell):
-            raise TypeError("Can only copy from another Cell object")
-
-        # Copy state attributes (position stays the same)
-        self.is_collapsed = other_cell.is_collapsed
-        self.recursion_checked = other_cell.recursion_checked
-
-        # Copy numpy array efficiently
-        np.copyto(self.possible, other_cell.possible)
-
-        # Copy tile reference
-        self.tile = other_cell.tile
-
     def set_tile(self, tile: np.ndarray) -> None:
         self.tile = tile
 
     def get_tile(self) -> np.ndarray:
         return self.tile
 
-    def draw(self, screen: pygame.Surface):
-        colour = (120, 120, 120)
+    def draw(self, screen: pygame.Surface, average_colour=None) -> None:
         if self.tile is None:
+            # Average colour of top-left pixel of all possible tiles
             pygame.draw.rect(
-                screen, colour, (self.x_pos, self.y_pos, self.width, self.height), 1
+                screen, average_colour, (self.x_pos, self.y_pos, self.width, self.height)
             )
         else:
             blit_array = np.transpose(self.tile, (1, 0, 2))
@@ -104,4 +65,4 @@ class Cell:
         self.recursion_checked = False
 
     def __repr__(self):
-        return f"Cell(pos=({self.x_pos}, {self.y_pos}), collapsed={self.is_collapsed}, possibilities={np.sum(self.possible)})"
+        return f"Cell(pos=({self.x_pos // self.width}, {self.y_pos // self.height}), collapsed={self.is_collapsed}, tile={self.tile}, possibilities={np.nonzero(self.possible)[0]})"
